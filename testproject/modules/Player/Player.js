@@ -14,9 +14,19 @@ engine.registerModule('Player', '0.1.0')
                 this.lastShot = (new Date()).getTime();
                 this.shootTimer = 150;
                 this.direction = new engine.Vector();
+
+                this.sounds = {
+                    'turret_01': [engine.sound.get('turret_01')],
+                };
             },
             update: function(dt) {
                 
+                //get direction
+                this.direction.x = this.game.input.mouse.pos.x - this.pos.x;
+                this.direction.y = this.game.input.mouse.pos.y - this.pos.y;
+                //this.direction.sub(this.pos);
+                this.direction.normalize();
+
                 //constrain to screen
                 if (this.pos.x < 0) {
                     this.pos.x = 0;
@@ -29,11 +39,6 @@ engine.registerModule('Player', '0.1.0')
                     this.pos.y = this.game.canvas.height;
                 }
                 
-                //get direction
-                this.direction.x = this.game.input.mouse.pos.x;
-                this.direction.y = this.game.input.mouse.pos.y;
-                this.direction.sub(this.pos);
-                this.direction.normalize();
                 
                 //update bullets
                 for(var i in this.bullets) {
@@ -57,10 +62,10 @@ engine.registerModule('Player', '0.1.0')
                     console.log('shooting');
                     this.shooting = true;
                     this.shoot();
-                    //cpush backwards
+                    //push backwards
                     var shootForce = new engine.Vector(this.direction.x, this.direction.y);
                     shootForce.invert();
-                    shootForce.mult(5);
+                    shootForce.mult(10);
                     shootForce.add(new engine.Vector(-1 + Math.random()*2, -1 + Math.random()*2));
                     this.acceleration.add(shootForce);
                     
@@ -102,21 +107,36 @@ engine.registerModule('Player', '0.1.0')
                 
                 //handle movement
                 this.moving = false;
+                var movement = new engine.Vector();
+                movement.x = this.direction.x;
+                movement.y = this.direction.y;
+
                 if (this.game.input.keys['w']) {
                     this.moving = true;
-                    this.acceleration.y -= this.speed;
+                    this.acceleration.x += movement.x * 10;
+                    this.acceleration.y += movement.y * 10;
+                    //this.acceleration.y -= this.speed;
                 }
                 if (this.game.input.keys['s']) {
                     this.moving = true;
-                    this.acceleration.y += this.speed; 
+                    movement.invert();
+                    this.acceleration.x += movement.x * 10;
+                    this.acceleration.y += movement.y * 10;
+                    //this.acceleration.y += this.speed;
                 }
                 if (this.game.input.keys['a']) {
                     this.moving = true;
-                    this.acceleration.x -= this.speed;
+                    movement = engine.Vector.rotate(movement, Math.degToRad(-90));
+                    this.acceleration.x += movement.x * 10;
+                    this.acceleration.y += movement.y * 10;
+                    //this.acceleration.x -= this.speed;
                 }
                 if (this.game.input.keys['d']) {
                     this.moving = true;
-                    this.acceleration.x += this.speed;
+                    movement = engine.Vector.rotate(movement, Math.degToRad(90));
+                    this.acceleration.x += movement.x * 10;
+                    this.acceleration.y += movement.y * 10;
+                    //this.acceleration.x += this.speed;
                 }
                 
                 //limit acceleration, both positive and negative
@@ -174,6 +194,11 @@ engine.registerModule('Player', '0.1.0')
             },
             
             shoot: function() {
+
+                //play turret_01
+                var instance = engine.sound.get('turret_01');
+                instance.play();
+
                 //spawn a new bullet at the player
                 var bullet = {
                     pos: new engine.Vector(),
