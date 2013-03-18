@@ -56,7 +56,6 @@ engine.registerModule('Scene', '0.1.0')
             }
         });
         
-        
         engine.Layer = Class.extend({
             name: 'New Layer',
             visible: true,

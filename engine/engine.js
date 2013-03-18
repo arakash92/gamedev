@@ -123,6 +123,22 @@ function engine(wrapper, options) {
 	this.buffer = this.$buffer[0];
 	this.bufferCtx = this.buffer.getContext('2d');
 	
+	//set some options
+	this.ctx.imageSmoothingEnabled = false;
+	this.ctx.mozImageSmoothingEnabled = false;
+	this.ctx.webkitImageSmoothingEnabled = false;
+	this.ctx.font = "14pt monospace";
+
+	this.bufferCtx.imageSmoothingEnabled = false;
+	this.bufferCtx.mozImageSmoothingEnabled = false;
+	this.bufferCtx.webkitImageSmoothingEnabled = false;
+	this.bufferCtx.font = "14pt monospace";
+
+	this.rotationCtx.imageSmoothingEnabled = false;
+	this.rotationCtx.mozImageSmoothingEnabled = false;
+	this.rotationCtx.webkitImageSmoothingEnabled = false;
+	this.rotationCtx.font = "14pt monospace";
+
 	//setup window resize event
 	this.resizeCallback = function() {
 		//set canvas dimensions
@@ -154,7 +170,8 @@ function engine(wrapper, options) {
 		this.wrapper.css({
 			width: width,
 			height: height,
-			'left': ($(window).width() - width) / 2
+			'left': ($(window).width() - width) / 2,
+			'top': ($(window).height() - height) / 2,
 		});
 	};
 	
@@ -416,9 +433,10 @@ engine.loadModule = function(name, callback, fromProject) {
 			var interval = setInterval(function() {
 				if (engine.modules[name] !== undefined) {
 					clearInterval(interval);
-					callback();
+					console.log('module ' + name +' ready, running callback');
+					callback(name);
 				}
-			}, 200);
+			}, 100);
 		}
 		
 		//now load it
@@ -430,7 +448,12 @@ engine.loadModule = function(name, callback, fromProject) {
 	}
 };
 
-engine.require = function(modules, callback, fromProject) {
+engine.require = function(modules, progress, callback, fromProject) {
+	if (callback === undefined) {
+		callback = progress;
+		fromProject = undefined;
+		progress = undefined;
+	}
 	var path;
 	if (fromProject === true) {
 		if (engine.settings.projectURL === undefined) {
@@ -471,12 +494,18 @@ engine.require = function(modules, callback, fromProject) {
 			console.log('Modules loaded. Running callback naow!');
 			clearInterval(interval);
 			callback();
-		}, 50);
+		}, 20);
 	}
 	
 	//load them
-	for (i in modules) {
-		engine.loadModule(modules[i], null, fromProject);
+	if (progress !== undefined) {
+		for (i in modules) {
+			engine.loadModule(modules[i], progress, fromProject);
+		}
+	}else {
+		for (i in modules) {
+			engine.loadModule(modules[i], null, fromProject);
+		}
 	}
 };
 
@@ -708,7 +737,10 @@ engine.sound.get = function(name, type) {
 
 
 
-engine.preload = function(stuff, callback) {
+engine.preload = function(stuff, progressCallback, callback) {
+	if (typeof callback !== 'function') {
+		callback = progressCallback;
+	}
 	console.log('Preloading lots of stuff...');
 	var i,loadedStuff = {};
 
@@ -719,9 +751,15 @@ engine.preload = function(stuff, callback) {
 		if(stuff.core.modules !== undefined) {
 			//add to loadedStuff
 			loadedStuff[stuff.core.modules] = false;
-			engine.require(stuff.core.modules, function() {
-				loadedStuff[stuff.core.modules] = true;
-			});
+			if (progressCallback !== undefined) {
+				engine.require(stuff.core.modules, progressCallback, function() {
+					loadedStuff[stuff.core.modules] = true;
+				});
+			}else {
+				engine.require(stuff.core.modules, function() {
+					loadedStuff[stuff.core.modules] = true;
+				});
+			}
 		}
 		//more core stuff?
 	}
@@ -732,9 +770,16 @@ engine.preload = function(stuff, callback) {
 		if (stuff.project.modules !== undefined) {
 			//add to loadedStuff
 			loadedStuff[stuff.project.modules] = false;
-			engine.require(stuff.project.modules, function() {
-				loadedStuff[stuff.project.modules] = true;
-			}, true);//true: loads them from the project URL instead of the core engine
+
+			if (progressCallback !== undefined) {
+				engine.require(stuff.project.modules, progressCallback, function() {
+					loadedStuff[stuff.project.modules] = true;
+				}, true);//true: loads them from the project URL instead of the core engine
+			}else {
+				engine.require(stuff.project.modules, function() {
+					loadedStuff[stuff.project.modules] = true;
+				}, true);//true: loads them from the project URL instead of the core engine
+			}
 		}
 		//images (coming soon)
 
@@ -752,6 +797,9 @@ engine.preload = function(stuff, callback) {
 			for(i in stuff.project.sounds) {
 				engine.sound.load(i, stuff.project.sounds[i], function(e) {
 					loadedStuff['sound'][e.id] = true;
+					if (progressCallback !== undefined) {
+						progressCallback(e.id);
+					}
 					
 					for(var ii in loadedStuff['sound']) {
 						if (loadedStuff['sound'][ii] !== true) {
@@ -780,7 +828,7 @@ engine.preload = function(stuff, callback) {
 		clearInterval(interval);
 		callback();
 
-	}, 50);
+	}, 20);
 };
 
 

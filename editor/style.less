@@ -1,0 +1,62 @@
+html {
+	width: 100%;
+	height: 100%;
+}
+body {
+	background-image: url('bg.png');
+	background-repeat: repeat;
+	background-size: 10px;
+	width: 100%;
+	height: 100%;
+}
+#editor {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+
+	a {
+		cursor: pointer;
+	}
+
+	/* panels, views etc */
+	.panel {
+		height: 100%;
+		background: rgba(255,255,555,0.2);
+		border: 1px solid #666;
+
+		> .inner {
+			padding: 8px;
+		}
+
+		.view {
+			//background: rgba(45,45,45,0.6);
+		}
+	}
+
+
+	#main-menu {
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		-khtml-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+
+		.btn-toolbar {
+			margin: 0;
+		}
+	}
+
+	.top-row {
+
+	}
+
+	.main-row {
+		height: 80%;
+	}
+
+	.bottom-row {
+		height: 20%;
+	}
+}

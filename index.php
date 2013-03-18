@@ -21,6 +21,9 @@
 	<!--bootstrap css-->
 	<link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css" rel="stylesheet">
 
+	<!-- darkstrap css -->
+	<link rel="stylesheet" type="text/css" href="engine/lib/darkstrap.css">
+
 	<!--create.js for sound-->
 	<script type="text/javascript" src="http://code.createjs.com/createjs-2013.02.12.min.js"></script>
 	
@@ -32,28 +35,51 @@
 		body {
 			background: black;
 		}
+		#game {
+			overflow: hidden;
+		}
 		.container-fluid {
 			padding: 0;
 		}
 		.gui-settings {
 			position: absolute;
-			top: 0px;
+			z-index: 20;
+			top: -14px;
 			width: 100%;
-			height: auto;
+			height: 30px;
 			background: rgba(255,255,255,0.3);
+			opacity:0.4;
+			filter:Alpha(opacity=40);
 			border-bottom: 1px solid #777;
+			-webkit-transition: all 300ms;
+			-moz-transition: all 300ms;
+			-ms-transition: all 300ms;
+			-o-transition: all 300ms;
+			transition: all 300ms;
+		}
+		.gui-settings:hover {
+			opacity:0.9;
+			filter:Alpha(opacity=90);
+			top: 0px;
+		}
+		.gui-settings .inner {
+			padding: 4px 8px;
 		}
 		.gui-settings .music-volume, .gui-settings .sfx-volume {
 			float: left;
 			margin-right: 10px;
 		}
 		.gui-settings .slider {
-			position: absolute;
+			position: relative;
+			top: 4px;
+			left: 8px;
 		}
 
 
 		/* Main Menu GUI */
 		.gui-mainmenu {
+			position: relative;
+			z-index: 20;
 			max-width: 240px;
 			margin: 20% auto;
 			background: rgba(50,50,50,0.5);
@@ -62,7 +88,9 @@
 			width: 100%;
 			height: 100%;
 			border-radius: 4px;
-			border: 1px solid #fff;
+			border: 1px solid #777;
+			border-top-color: #fff;
+			border-bottom-color: #454545;
 		}
 		.gui-mainmenu .row-fluid .span12 {
 			padding: 10px;
@@ -73,67 +101,118 @@
 			clear: both;
 			margin: 4px 0px;
 		}
+
+
+
+		/* preload overlay */
+		.preload-overlay {
+			position: absolute;
+			z-index: 100;
+			top: 0px;
+			width: 100%;
+			height: 100%;
+			background: white;
+		}
+		.preload-overlay .logo {
+			margin-bottom: 20px;
+		}
+		.preload-overlay .inner {
+			max-width: 40%;
+			margin: 20% auto;
+		}
+		.preload-overlay .logo img {
+			width: 100%;
+		}
+		.preload-overlay .loading-bar {
+			clear: both;
+		}
+		.preload-overlay .progress {
+			position: relative;
+		}
+		.preload-overlay .progress .text {
+			position: absolute;
+			top: 0px;
+			text-align: center;
+			width: 100%;
+			text-transform: uppercase;
+			font-size: 0.9em;
+			font-weight: 700;
+			text-shadow: 1px 1px 1px #FFF;
+			filter: dropshadow(color=#FFF, offx=1, offy=1);
+		}
 	</style>
 </head>
 <body>
-	
-	<div id="game">
-		<div class="gui">
-			<div class="gui-settings">
-				<div class="inner">
-					<div style="display: none;" class="music-volume">
-						<a title="Change music volume" class="btn-inverse btn-small toggle-music-slider"><i class="icon-white icon-music"></i></a>
-						<div class="slider">
-						</div>
-					</div>
-					<div style="display: none;" class="sfx-volume">
-						<a title="Change sound effects volume" class="toggle-sfx-slider"><i class="icon-white icon-volume"></i></a>
-						<div class="slider">
-						</div>
-					</div>
-				</div>
+	<div class="preload-overlay">
+		<div class="inner">
+			<div class="logo">
+				<img src="darkshift/images/logo_large.png">
 			</div>
-
-			<div class="gui-mainmenu">
-				<div class="inner">
-					<div class="container-fluid menu">
-						<div class="row-fluid">
-							<div class="span12">
-								<button class="game-toggle-start btn-inline btn-inverse">Start Game</button>
-								<button disabled="disabled" class="game-toggle-multiplayer btn-inline">Multiplayer</button>
-								<button class="game-toggle-options btn-inline btn-inverse">Options</button>
-								<button class="game-toggle-help btn-inline btn-inverse">Help</button>
-							</div>
-						</div>
-					</div>
+			<div class="loading-bar">
+				<div class="progress progress-striped active">
+					<div class="text">Loading...</div>
+				  	<div class="bar" style="width: 0%;"></div>
 				</div>
-			</div>
-
-			<div class="gui-hud" style="display: none;">
-				<div class="top">
-
-				</div>
-				<div class="bottom">
-					<div class="inner">
-						<div class="left">
-
-						</div>
-						<div class="center">
-							<div class="item health">
-								200
-							</div>
-						</div>
-						<div class="right">
-							<div class="time">
-							1:30:45
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="gui-menu">
-
 			</div>
 		</div>
+	</div>
+	<div id="game">
+		
+		<div class="gui-settings">
+			<div class="inner">
+				<div class="music-volume">
+					<a title="Change music volume" class="btn btn-inverse btn-small toggle-music-slider"><i class="icon-white icon-music"></i></a>
+					<div class="slider" style="display: none;">
+					</div>
+				</div>
+				<div class="sfx-volume">
+					<a title="Change sound effects volume" class="btn btn-inverse btn-small toggle-sfx-slider"><i class="icon-white icon-volume-up"></i></a>
+					<div class="slider" style="display: none;">
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="gui-mainmenu">
+			<div class="inner">
+				<div class="container-fluid menu">
+					<div class="row-fluid">
+						<div class="span12">
+							<button class="game-toggle-start btn-inline btn-inverse">Start Game</button>
+							<button disabled="disabled" class="game-toggle-multiplayer btn-inline">Multiplayer</button>
+							<button class="game-toggle-options btn-inline btn-inverse">Options</button>
+							<button class="game-toggle-help btn-inline btn-inverse">Help</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="gui-hud" style="display: none;">
+			<div class="top">
+
+			</div>
+			<div class="bottom">
+				<div class="inner">
+					<div class="left">
+
+					</div>
+					<div class="center">
+						<div class="item health">
+							200
+						</div>
+					</div>
+					<div class="right">
+						<div class="time">
+						1:30:45
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="gui-menu">
+
+		</div>
+		
 	</div>
 	
 	<script type="text/javascript">
@@ -156,8 +235,11 @@
 		/*------------------------------
 		 * Set up volume mixer controls for music
 		 *------------------------------*/
+		var slider = $('.gui-settings .music-volume .slider');
+		slider.bind('mouseleave', function() {
+			$(this).slideUp().removeClass('visible');
+		});
 		$(".gui-settings .music-volume .toggle-music-slider").click(function() {
-			var slider = $('.gui-settings .music-volume .slider');
 			if(slider.hasClass('visible')) {
 				//hide
 				slider.slideUp().removeClass('visible')
@@ -181,14 +263,17 @@
 		/*------------------------------
 		 * Set up volume mixer controls for music
 		 *------------------------------*/
+		slider2 = $('.gui-settings .sfx-volume .slider');
+		slider2.bind('mouseleave', function() {
+			$(this).slideUp().removeClass('visible');
+		});
 		 $(".gui-settings .sfx-volume .toggle-sfx-slider").click(function() {
-			var slider = $('.gui-settings .sfx-volume .slider');
-			if(slider.hasClass('visible')) {
+			if(slider2.hasClass('visible')) {
 				//hide
-				slider.slideUp().removeClass('visible')
+				slider2.slideUp().removeClass('visible')
 			}else {
 				//show
-				slider.slideDown().addClass('visible');
+				slider2.slideDown().addClass('visible');
 			}
 		});
 		$(".gui-settings .sfx-volume .slider").slider({
@@ -203,64 +288,81 @@
 		});
 
 
+
+
 		/*------------------------------
 		 * Declare our game variable in the global scope
 		 * For easy debugging (this should be removed on production)
 		 *------------------------------*/
 		var game;
 		
+
+
+		/*------------------------------
+		 * Create our progress bar
+		 *------------------------------*/
+
+
+
+
 		/*------------------------------
 		 * Preload core modules, project modules
 		 * Sound and images
 		 *------------------------------*/
+		//variables
+		var bar = $(".preload-overlay .progress .bar"), loadCount = 0;
+		var loadingText = bar.parent().find('.text');
+
 		engine.preload({
 			core: {
 				modules: 'Entity,Scene,ParticleSystem',
 			},
 			project: {
-				modules: 'Player,mainMenu',
+				modules: 'mainMenu',
 				sounds: {
 					'music_roaming': 'sounds/roaming.ogg',
-					'turret_01': 'sounds/turret_01.ogg',
+					'ui_up': 'sounds/ui/up.ogg',
+					'ui_down': 'sounds/ui/down.ogg',
+					'ui_select': 'sounds/ui/select.ogg',
 				},
 			},
+		}, function(asset) {
+			/*------------------------------
+			 * Progress update
+			 *------------------------------*/
+			loadCount++;
+			loadingText.html(asset +' loaded');
+			bar.css('width', (100/5) * loadCount +'%');
+
+
+
 		}, function() {
+			/*------------------------------
+			 * Fade out the loading overlay
+			 *------------------------------*/
+			$(".preload-overlay").hide('fade', 1000);
 
-			//let's instantiate a new game instance
+
+			/*------------------------------
+			 * Initialzie the game and load the main menu
+			 *------------------------------*/
 			game = new engine('#game', {fps: 60});
-			
-			//set some options
-			game.ctx.imageSmoothingEnabled = false;
-			game.ctx.mozImageSmoothingEnabled = false;
-			game.ctx.webkitImageSmoothingEnabled = false;
-			game.ctx.font = "14pt monospace";
 
-			game.bufferCtx.imageSmoothingEnabled = false;
-			game.bufferCtx.mozImageSmoothingEnabled = false;
-			game.bufferCtx.webkitImageSmoothingEnabled = false;
-			game.bufferCtx.font = "14pt monospace";
 
-			game.rotationCtx.imageSmoothingEnabled = false;
-			game.rotationCtx.mozImageSmoothingEnabled = false;
-			game.rotationCtx.webkitImageSmoothingEnabled = false;
-			game.rotationCtx.font = "14pt monospace";
-
+			/*------------------------------
+			 * Main Menu
+			 *------------------------------*/
 			var mainMenu = new engine.mainMenu(game);
 			
-			var img = new Image();
-			img.onload = function() {
-				var player = new engine.Player(game, 'player', game.canvas.width/2, game.canvas.height/2);
-				player.sprite = img;
+			game.stage(mainMenu);
 
-				mainMenu.layers[0] = [player];
 
-				game.stage(mainMenu);
-				
-				//go!
-				game.run();
-			}
-			img.src = engine.settings.projectURL + 'images/player.png';
 
+
+			/*------------------------------
+			 * Run!
+			 *------------------------------*/
+			game.run();
 		});
 
 
