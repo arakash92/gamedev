@@ -29,75 +29,114 @@
 	<link rel="stylesheet" type="text/css" href="engine/engine.css">
 
 	<style type="text/css">
-
-		.gui {
-			font-family: monospace;
-			color: #3366FF;
+		body {
+			background: black;
 		}
-		.gui-hud {
+		.container-fluid {
+			padding: 0;
+		}
+		.gui-settings {
+			position: absolute;
+			top: 0px;
+			width: 100%;
+			height: auto;
+			background: rgba(255,255,255,0.3);
+			border-bottom: 1px solid #777;
+		}
+		.gui-settings .music-volume, .gui-settings .sfx-volume {
+			float: left;
+			margin-right: 10px;
+		}
+		.gui-settings .slider {
+			position: absolute;
+		}
+
+
+		/* Main Menu GUI */
+		.gui-mainmenu {
+			max-width: 240px;
+			margin: 20% auto;
+			background: rgba(50,50,50,0.5);
+		}
+		.gui-mainmenu .menu {
 			width: 100%;
 			height: 100%;
+			border-radius: 4px;
+			border: 1px solid #fff;
 		}
-		.gui-hud .top {
-			position: absolute;
-			top: 0px;
+		.gui-mainmenu .row-fluid .span12 {
+			padding: 10px;
+		}
+		.gui-mainmenu .menu button {
+			float: left;
 			width: 100%;
-		}
-		.gui-hud .bottom {
-			position: absolute;
-			bottom: 0px;
-			width: 100%;
-		}
-
-		.gui-audio {
-			position: absolute;
-			top: 0px;
-			right: 0px;
-		}
-		.gui-settings .controls {
-
+			clear: both;
+			margin: 4px 0px;
 		}
 	</style>
 </head>
 <body>
 	
 	<div id="game">
-		<div class="gui gui-settings">
-
-			<div class="music-volume">
-				<a href="#"><i class="icon-white icon-music"></i></a>
-				<div class="slider">
-				</div>
-			</div>
-		</div>
-		<div class="gui gui-hud" style="display: none;">
-			<div class="top">
-
-			</div>
-			<div class="bottom">
+		<div class="gui">
+			<div class="gui-settings">
 				<div class="inner">
-					<div class="left">
-
-					</div>
-					<div class="center">
-						<div class="item health">
-							200
+					<div style="display: none;" class="music-volume">
+						<a title="Change music volume" class="btn-inverse btn-small toggle-music-slider"><i class="icon-white icon-music"></i></a>
+						<div class="slider">
 						</div>
 					</div>
-					<div class="right">
-						<div class="time">
-						1:30:45
+					<div style="display: none;" class="sfx-volume">
+						<a title="Change sound effects volume" class="toggle-sfx-slider"><i class="icon-white icon-volume"></i></a>
+						<div class="slider">
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-		<div class="gui gui-menu">
 
+			<div class="gui-mainmenu">
+				<div class="inner">
+					<div class="container-fluid menu">
+						<div class="row-fluid">
+							<div class="span12">
+								<button class="game-toggle-start btn-inline btn-inverse">Start Game</button>
+								<button disabled="disabled" class="game-toggle-multiplayer btn-inline">Multiplayer</button>
+								<button class="game-toggle-options btn-inline btn-inverse">Options</button>
+								<button class="game-toggle-help btn-inline btn-inverse">Help</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="gui-hud" style="display: none;">
+				<div class="top">
+
+				</div>
+				<div class="bottom">
+					<div class="inner">
+						<div class="left">
+
+						</div>
+						<div class="center">
+							<div class="item health">
+								200
+							</div>
+						</div>
+						<div class="right">
+							<div class="time">
+							1:30:45
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="gui-menu">
+
+			</div>
 		</div>
 	</div>
 	
 	<script type="text/javascript">
-	   
 	   	/*------------------------------
 	   	 * First, setup engine and project URL's
 	   	 *------------------------------*/
@@ -106,7 +145,64 @@
 			'projectURL': 'http://84.212.5.59/gamedev/darkshift/',
 		});
 		
+
+		/*------------------------------
+		 * Now we set the initial volume levels
+		 *------------------------------*/
+		engine.sound.setVolume('music', 0.4);
+		engine.sound.setVolume('sfx', 0.8);
 		
+
+		/*------------------------------
+		 * Set up volume mixer controls for music
+		 *------------------------------*/
+		$(".gui-settings .music-volume .toggle-music-slider").click(function() {
+			var slider = $('.gui-settings .music-volume .slider');
+			if(slider.hasClass('visible')) {
+				//hide
+				slider.slideUp().removeClass('visible')
+			}else {
+				//show
+				slider.slideDown().addClass('visible');
+			}
+		});
+		$(".gui-settings .music-volume .slider").slider({
+			orientation: 'vertical',
+			step: 0.1,
+			value: 0.4,
+			min: 0.0,
+			max: 1.0,
+			change: function() {
+				engine.sound.setVolume($(this).slider('option', 'value'), 'music');
+			},
+		});
+
+
+		/*------------------------------
+		 * Set up volume mixer controls for music
+		 *------------------------------*/
+		 $(".gui-settings .sfx-volume .toggle-sfx-slider").click(function() {
+			var slider = $('.gui-settings .sfx-volume .slider');
+			if(slider.hasClass('visible')) {
+				//hide
+				slider.slideUp().removeClass('visible')
+			}else {
+				//show
+				slider.slideDown().addClass('visible');
+			}
+		});
+		$(".gui-settings .sfx-volume .slider").slider({
+			orientation: 'vertical',
+			step: 0.1,
+			value: 0.8,
+			min: 0.0,
+			max: 1.0,
+			change: function() {
+				engine.sound.setVolume($(this).slider('option', 'value'), 'sfx');
+			},
+		});
+
+
 		/*------------------------------
 		 * Declare our game variable in the global scope
 		 * For easy debugging (this should be removed on production)
@@ -137,17 +233,23 @@
 			game.ctx.imageSmoothingEnabled = false;
 			game.ctx.mozImageSmoothingEnabled = false;
 			game.ctx.webkitImageSmoothingEnabled = false;
-			
+			game.ctx.font = "14pt monospace";
+
 			game.bufferCtx.imageSmoothingEnabled = false;
 			game.bufferCtx.mozImageSmoothingEnabled = false;
 			game.bufferCtx.webkitImageSmoothingEnabled = false;
 			game.bufferCtx.font = "14pt monospace";
 
-			var mainMenu = new engine.mainMenu(game);
+			game.rotationCtx.imageSmoothingEnabled = false;
+			game.rotationCtx.mozImageSmoothingEnabled = false;
+			game.rotationCtx.webkitImageSmoothingEnabled = false;
+			game.rotationCtx.font = "14pt monospace";
 
+			var mainMenu = new engine.mainMenu(game);
+			
 			var img = new Image();
 			img.onload = function() {
-				var player = new engine.Player(game, 'player');
+				var player = new engine.Player(game, 'player', game.canvas.width/2, game.canvas.height/2);
 				player.sprite = img;
 
 				mainMenu.layers[0] = [player];

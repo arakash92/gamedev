@@ -639,9 +639,35 @@ engine.Event = Class.extend({
 
 engine.sound = function() {};
 
+engine.sound.event = new engine.Event();
+
 engine.sound.initted = false;
 
 engine.sound.onComplete = [];
+
+engine.sound.volumeLevels = [];
+
+engine.sound.getVolume = function(type) {
+	return engine.sound.volumeLevels[type];
+}
+
+engine.sound.setVolume  = function(volume, type) {
+	console.log('setting ' + type +' volume to ' + volume);
+	engine.sound.volumeLevels[type] = volume;
+	engine.sound.event.trigger('setVolume', {'volume': volume});
+
+	if (engine.sound.instances[type] !== undefined) {
+		var i,name,sound,instance,array;
+		for(i in engine.sound.instances[type]) {
+			name = engine.sound.instances[type][i];
+			for(sound in engine.sound.instances[type][i]) {
+				instance = engine.sound.instances[type][i][sound];
+				instance.setVolume(volume);
+			}
+		}
+	}
+}
+
 
 engine.sound.init = function() {
 	if (engine.sound.initted == false) {
@@ -663,8 +689,21 @@ engine.sound.load = function(name, file, complete) {
 	createjs.Sound.registerSound(engine.settings.projectURL + file, name);
 };
 
-engine.sound.get = function(name) {
-	return createjs.Sound.play(name);
+engine.sound.instances = {};
+
+engine.sound.get = function(name, type) {
+	if (type === undefined) {
+		var type = 'sfx';
+	}
+	var instance = createjs.Sound.play(name);
+	if (engine.sound.instances[type] === undefined) {
+		engine.sound.instances[type] = {'name': [instance]};
+	}else if (engine.sound.instances[type][name] === undefined) {
+		engine.sound.instances[type][name] = [instance];
+	}else {
+		engine.sound.instances[type][name].push(instance);
+	}
+	return instance;
 },
 
 
@@ -760,10 +799,10 @@ engine.Input = Class.extend({
 			self.keys[engine.Input.keyNames[e.which]] = false;
 		});
 		
-		$(document).bind('mousedown', function(e) {
+		$(this.game.canvas).bind('mousedown', function(e) {
 			self.mouse[e.which] = true;
 		});
-		$(document).bind('mouseup', function(e) {
+		$(this.game.canvas).bind('mouseup', function(e) {
 			self.mouse[e.which] = false;
 		})
 		

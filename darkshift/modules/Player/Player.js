@@ -185,15 +185,10 @@ engine.registerModule('Player', '0.1.0')
 				var rotationCtx = this.game.rotationCtx;
 				rotationCtx.save();
 
-				rotationCtx.translate( this.pos.x, this.pos.y );
-				rotationCtx.translate( this.sprite.width / 2, this.sprite.height / 2 );
-				var angle = this.angle;
-				angle -= 180 + 45;
-				if (angle < 0) {
-					angle = Math.abs(angle);
-				}
+				rotationCtx.translate( this.pos.x, this.pos.y);
+				var angle = 135 - this.angle;
 				rotationCtx.rotate( angle );
-				rotationCtx.drawImage( this.sprite, -this.sprite.width/2, -this.sprite.height/2 );
+				rotationCtx.drawImage( this.sprite, -24, -24, 48, 48);
 
 				rotationCtx.restore();
 				
@@ -234,7 +229,7 @@ engine.registerModule('Player', '0.1.0')
 						g.strokeStyle = 'white';
 						g.beginPath();
 						g.moveTo(this.pos.x,this.pos.y);
-						g.lineTo(this.pos.x+ this.direction.x*10,this.pos.y+this.direction.y*10);
+						g.lineTo(this.pos.x+ this.direction.x*15,this.pos.y+this.direction.y*15);
 						g.stroke();
 						//g.fillRect(this.pos.x-2, this.pos.y-2, 4, 4);
 					},

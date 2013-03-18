@@ -13,13 +13,30 @@
 	-ms-user-select: none;
 	user-select: none;
 }
-.engine .gui {
+.engine .engine-canvas {
 	position: absolute;
 	top: 0px;
+	z-index: 10;
+}
+.engine .gui {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0px;
+	z-index: 20;
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
 	-khtml-user-select: none;
 	-moz-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
+}
+.gui {
+	font-family: monospace;
+}
+.gui > .inner {
+	padding: 6px;
+}
+a {
+	cursor: pointer;
 }

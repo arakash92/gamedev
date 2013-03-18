@@ -6,24 +6,13 @@ engine.registerModule('mainMenu', '0.1.0')
 			init: function(game) {
 				this._super(game);
 				var self = this;
-				$(".gui-settings .music-volume .slider").slider({
-					value: 0.3,
-					step: 0.1,
-					min: 0.0,
-					max: 1.0,
-					orientation: 'vertical',
-					change: function() {
-						self.game.setVolume(1.0 - $(this).slider('option', 'value'));
-						console.log('changed value to ' + self.game.sound.volume);
-					},
-				});
+				
 			},
 
 			stage: function() {
 				this.game.wrapper.append('<div style="display: none;" class="gui gui-mainmenu"/>');
 				this.gui = this.game.wrapper.find('.gui-mainmenu');
-				this.music = engine.sound.get('music_roaming');
-				this.music.setVolume(0.5);
+				this.music = engine.sound.get('music_roaming', 'music');
 			},
 
 			unstage: function() {
