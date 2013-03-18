@@ -16,20 +16,24 @@
 	
 
 	<!--bootsrap js-->
-	<script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/js/bootstrap.min.js"></script>
+	<script src="engine/lib/bootstrap/js/bootstrap.min.js"></script>
 
 	<!--bootstrap css-->
-	<link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css" rel="stylesheet">
+	<link href="engine/lib/bootstrap/css/bootstrap.min.css" type="text/css" rel="stylesheet">
 
 	<!-- darkstrap css -->
-	<link rel="stylesheet" type="text/css" href="engine/lib/darkstrap.css">
+	<link href="engine/lib/bootstrap/css/darkstrap.css" type="text/css" rel="stylesheet">
 
 	<!--create.js for sound-->
 	<script type="text/javascript" src="http://code.createjs.com/createjs-2013.02.12.min.js"></script>
 	
-	<!--engine-->
+	<!--engine JS-->
 	<script type="text/javascript" src="engine/engine.js"></script>
+
 	<link rel="stylesheet" type="text/css" href="engine/engine.css">
+
+	<!-- less.js (parses LESS files) -->
+	<script type="text/javascript" src="engine/lib/less/less.js"></script>
 
 	<style type="text/css">
 		body {
@@ -130,6 +134,7 @@
 			position: relative;
 		}
 		.preload-overlay .progress .text {
+			color: black;
 			position: absolute;
 			top: 0px;
 			text-align: center;
@@ -332,7 +337,7 @@
 			 *------------------------------*/
 			loadCount++;
 			loadingText.html(asset +' loaded');
-			bar.css('width', (100/5) * loadCount +'%');
+			bar.css('width', (100/8) * loadCount +'%');
 
 
 
@@ -352,11 +357,28 @@
 			/*------------------------------
 			 * Main Menu
 			 *------------------------------*/
-			var mainMenu = new engine.mainMenu(game);
+			//var mainMenu = new engine.mainMenu(game);
 			
-			game.stage(mainMenu);
+			//game.stage(mainMenu);
 
 
+			/*------------------------------
+			 * TESTING
+			 *------------------------------*/
+			$(".gui-mainmenu").hide();
+
+			var scene = new engine.Scene();
+
+			scene.event.bind('update', function(dt) {
+				if (game.input.keys['left_arrow']) scene.camera.x -= 0.5;
+				if (game.input.keys['right_arrow']) scene.camera.x += 0.5;
+				if (game.input.keys['down_arrow']) scene.camera.y += 0.5;
+				if (game.input.keys['up_arrow']) scene.camera.y -= 0.5;
+			});
+			
+			
+			
+			game.stage(scene);
 
 
 			/*------------------------------
@@ -364,6 +386,10 @@
 			 *------------------------------*/
 			game.run();
 		});
+
+	
+
+
 
 
 		/*

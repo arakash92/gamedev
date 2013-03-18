@@ -98,49 +98,96 @@
 
 
 
-
-function engine(wrapper, options) {
-	var self = this;
+engine = Class.extend({
+	init: function(wrapper, options) {
+		console.log('Instantiating new engine instance...');
+		var self = this;
 	
-	//set the wrapper
-	this.wrapper = $(wrapper);
-	this.wrapper.addClass('engine');
-	//create two canvases
-	this.wrapper.append('<canvas onContextMenu="return false;" class="engine-canvas"></canvas><canvas style="display: none;" class="engine-buffer"></canvas>');
-	
-	//create a rotation canvas
-	this.wrapper.append('<canvas class="engine-rotationcanvas" style="display: none;"></canvas>');
-	this.rotationCanvas = this.wrapper.find('.engine-rotationcanvas')[0];
-	this.rotationCtx = this.rotationCanvas.getContext('2d');
+		/*------------------------------
+		 * Initialize canvas & context
+		 *------------------------------*/
+		this.wrapper = $(wrapper);
+		this.wrapper.addClass('engine');
+		
+		//two canvases, for double buffering.
+		this.wrapper.append('<canvas onContextMenu="return false;" class="engine-canvas"></canvas><canvas style="display: none;" class="engine-buffer"></canvas>');
+		
+		//create a rotation canvas
+		this.wrapper.append('<canvas class="engine-rotationcanvas" style="display: none;"></canvas>');
+		this.rotationCanvas = this.wrapper.find('.engine-rotationcanvas')[0];
+		this.rotationCtx = this.rotationCanvas.getContext('2d');
 
-	//set the canvas
-	this.$canvas = this.wrapper.find('.engine-canvas');
-	this.canvas = this.$canvas[0];
-	this.ctx = this.canvas.getContext('2d');
-	
-	//buffer canvas
-	this.$buffer = this.wrapper.find('.engine-buffer');
-	this.buffer = this.$buffer[0];
-	this.bufferCtx = this.buffer.getContext('2d');
-	
-	//set some options
-	this.ctx.imageSmoothingEnabled = false;
-	this.ctx.mozImageSmoothingEnabled = false;
-	this.ctx.webkitImageSmoothingEnabled = false;
-	this.ctx.font = "14pt monospace";
+		//set the canvas
+		this.$canvas = this.wrapper.find('.engine-canvas');
+		this.canvas = this.$canvas[0];
+		this.ctx = this.canvas.getContext('2d');
+		
+		//buffer canvas
+		this.$buffer = this.wrapper.find('.engine-buffer');
+		this.buffer = this.$buffer[0];
+		this.bufferCtx = this.buffer.getContext('2d');
+		
+		//disable image smoothing by default
+		this.ctx.imageSmoothingEnabled = false;
+		this.ctx.mozImageSmoothingEnabled = false;
+		this.ctx.webkitImageSmoothingEnabled = false;
+		this.ctx.font = "14pt monospace";
 
-	this.bufferCtx.imageSmoothingEnabled = false;
-	this.bufferCtx.mozImageSmoothingEnabled = false;
-	this.bufferCtx.webkitImageSmoothingEnabled = false;
-	this.bufferCtx.font = "14pt monospace";
+		this.bufferCtx.imageSmoothingEnabled = false;
+		this.bufferCtx.mozImageSmoothingEnabled = false;
+		this.bufferCtx.webkitImageSmoothingEnabled = false;
+		this.bufferCtx.font = "14pt monospace";
 
-	this.rotationCtx.imageSmoothingEnabled = false;
-	this.rotationCtx.mozImageSmoothingEnabled = false;
-	this.rotationCtx.webkitImageSmoothingEnabled = false;
-	this.rotationCtx.font = "14pt monospace";
+		this.rotationCtx.imageSmoothingEnabled = false;
+		this.rotationCtx.mozImageSmoothingEnabled = false;
+		this.rotationCtx.webkitImageSmoothingEnabled = false;
+		this.rotationCtx.font = "14pt monospace";
 
-	//setup window resize event
-	this.resizeCallback = function() {
+		//gameloop stuff
+		this.fps = 0;
+		this.frame_time = null;
+		this.deltaTime = null;
+		this.time_last = null;
+		this.time_now = null;
+		
+		this.scene = null;
+
+		//listen for resize
+		$(window).bind('resize', function() {
+			self.resizeCallback();
+		});
+
+		//options
+		this.options = {
+			fps: 60,
+			width: 640,
+			height: 320,
+		};
+
+		//set options
+		var i;
+		for (i in options) {
+			this.options[i] = options[i];
+		}
+		
+		//apply width, height etc
+		var height = this.options.height,
+			width = this.options.width;
+		this.canvas.width = width;
+		this.canvas.height = height;
+		this.buffer.width = width;
+		this.buffer.height = height;
+		
+		this.resizeCallback();
+		
+		this.input = new engine.Input();
+		this.event = new engine.Event();
+		this.console = new engine.Console();
+
+		console.log('Engine initialized.');
+	},
+
+	resizeCallback: function() {
 		//set canvas dimensions
 		var width = 1200;
 		var height = 700;
@@ -173,74 +220,78 @@ function engine(wrapper, options) {
 			'left': ($(window).width() - width) / 2,
 			'top': ($(window).height() - height) / 2,
 		});
-	};
-	
-	$(window).bind('resize', function() {
-		self.resizeCallback();
-	});
-	
-	this.debug = {
-		game: self,
-		statsArray: [],
-		logArray: [],
-		enabled: false,
-		log: function(msg) {
-			var i;
-			for(i in this.log) {
-				if (this.log[i] == msg) {
-					return false;
-				}
-			}
-			log.push(msg);
-			return true;
-		},
-		stats: function(key, value) {
-			this.statsArray[key] = value;
-		},
-		renderStats: function(g) {
-			if (this.enabled == true) {
-				var y = 0;
-				for (i in this.statsArray) {
-					if (this.statsArray[i] !== null) {
-						g.globalAlpha = 1;
-						g.fillStyle = 'white';
-						g.textBaseline = 'top';
-						g.textAlign = 'left';
-						g.font = '12pt monospace';
-						
-						g.fillText(i + ': ' + this.statsArray[i], 10, 10 + (16 * y));
-						y+=1;
-					}
-				}
-			}
-		}
-	};
-	
-	this.run = function() {
+
+		engine.settings.currentGame = this;
+	},
+
+	run: function() {
 		this.running = true;
 		this.time_last = (new Date()).getTime();
 		this.time_now = (new Date()).getTime();
 		this.frame_time = 1000/this.options.fps;
 		
 		this.gameLoop();
-	};
-	
-	this.pause = function() {
+	},
+
+	pause: function() {
 		this.running = false;
-	};
-	
-	//gameloop stuff
-	this.fps = 0;
-	this.frame_time = null;
-	this.deltaTime = null;
-	this.time_last = null;
-	this.time_now = null;
-	
-	this.scene = null;
-	
-	this.lastDebug = (new Date()).getTime();
-	
-	this.stage = function(scene) {
+	},
+
+	gameLoop: function() {
+		var self = this;
+		setTimeout(function() {
+			requestAnimationFrame(function() {
+				self.gameLoop();
+			});
+			
+			//get statistics
+			self.time_now = (new Date()).getTime();
+			self.deltaTime = self.time_now - self.time_last;
+			self.time_last = self.time_now;
+			self.fps = self.frame_time/self.deltaTime*self.options.fps;
+			
+			//deltaTime
+			self.deltaTime = self.deltaTime/self.frame_time;
+			
+			//update
+			self.update();
+			
+			//render
+			self.render();
+		}, self.frame_time);
+	},
+
+	update: function() {
+		this.event.trigger('update_pre');
+
+		//update
+		if (this.scene !== null) {
+			this.scene.update(self.deltaTime);
+		}
+
+		this.event.trigger('update_post');
+	},
+
+	render: function() {
+		this.event.trigger('render_pre');
+
+		//clear buffer & rotation
+		this.bufferCtx.clearRect(0,0, this.buffer.width, this.buffer.height);
+		this.rotationCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		
+		//render
+		if (this.scene !== null) {
+			this.scene.render(this.bufferCtx);
+		}
+		
+		//transfer to displayed canvas
+		this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
+		this.ctx.drawImage(this.buffer, 0, 0);
+
+		this.event.trigger('render_post');
+	},
+
+	stage: function(scene) {
 		console.log('Staging scene ' + scene.name);
 		
 		//if there is a scene set, unstage it.
@@ -250,111 +301,54 @@ function engine(wrapper, options) {
 		//now stage the new scene
 		this.scene = scene;
 		this.scene.stage();
-	}
+	},
 
-	this.unstage = function() {
+	unstage: function() {
 		this.scene.unstage();
 		var stage = this.stage;
 		this.stage = null;
 		return stage;
-	}
-	
+	},
+});
 
-	
-	this.gameLoop = function() {
-		setTimeout(function() {
-			requestAnimationFrame(self.gameLoop);
-			
-			//get statistics
-			
-			self.time_now = (new Date()).getTime();
-			self.deltaTime = self.time_now - self.time_last;
-			self.time_last = self.time_now;
-			self.fps = self.frame_time/self.deltaTime*self.options.fps;
-			
-			//set 
-			self.deltaTime = self.deltaTime/self.frame_time;
-			
-			//put FPS on stats display
-			if (self.time_now - self.lastDebug > 500) {
-				self.debug.stats('DeltaTime', self.deltaTime);
-				self.debug.stats('FPS', Math.round(self.fps));
-				self.lastDebug = self.time_now;
+
+
+/*------------------------------
+ * Debug
+ *------------------------------*/
+engine.Console = Class.extend({
+	init: function() {
+		console.log('initializing Console');
+		var self = this;
+		engine.settings.currentGame.wrapper.append('<div class="engine-console"><div class="debug"></div><div class="log"></div></div>');
+		this.wrapperDiv = engine.settings.currentGame.wrapper.find('.engine-console');
+		this.debugDiv = this.wrapperDiv.find('.debug');
+		this.debugArray = [];
+
+		setInterval(function() {
+			var i,str = [];
+			for(i in self.debugArray) {
+				str.push(i +': ' + self.debugArray[i]);
 			}
-			
-			//update
-			self.update();
-			
-			//render
-			self.render();
-			
-		}, self.frame_time);
-	};
-	
+			self.debugDiv.html(str.join('<br>'));
+		}, 500);
+	},
+	debug: function(key, value) {
+		this.debugArray[key] = value;
+	},
+	log: function() {
 
-	this.update = function() {
-		this.event.trigger('update_pre');
-		//update
-		if (this.scene !== null) {
-			this.scene.update(self.deltaTime);
-		}
-		this.event.trigger('update_post');
-	};
-	
-	this.render = function() {
-		this.event.trigger('render_pre');
-		//clear buffer
-		this.bufferCtx.clearRect(0,0, this.buffer.width, this.buffer.height);
-		this.rotationCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		
-		//render
-		if (this.scene !== null) {
-			this.scene.render(this.bufferCtx);
-		}
-		
-		//renderStats
-		this.debug.renderStats(this.bufferCtx);
-		
-		//transfer to displayed canvas
-		this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
-		this.ctx.drawImage(this.buffer, 0, 0);
-		this.event.trigger('render_post');
-	};
-	
-	//options
-	this.options = {
-		fps: 60,
-		width: 640,
-		height: 320,
-	};
-	
-	//set options
-	var i;
-	for (i in options) {
-		this.options[i] = options[i];
-	}
-	
-	//apply width, height etc
-	var height = this.options.height,
-		width = this.options.width;
-	this.canvas.width = width;
-	this.canvas.height = height;
-	this.buffer.width = width;
-	this.buffer.height = height;
-	
-	this.resizeCallback();
-	
-	this.input = new engine.Input(this);
-	this.event = new engine.Event(this);
-
-	console.log('Welcome to engine.js, a game engine without a name.');
-}
+	},
+});
 
 
-//settings
+/*------------------------------
+ * Engine settings
+ *------------------------------*/
 engine.settings = {
 	engineURL: null,
 	projectURL: null,
+	currentGame: null,
 };
 
 engine.setup = function(settings) {
@@ -635,15 +629,16 @@ engine.Graphics = Class.extend({
 
 
 
-
 engine.Event = Class.extend({
-	init: function(game) {
-		this.game = game;
+	init: function() {
 		this.listeners = [];
 		console.log('event object initialized');
 	},
 
 	bind: function(event, callback) {
+		if (this.listeners[event] === undefined) {
+			this.listeners[event] = [];
+		}
 		this.listeners[event].push(callback);
 	},
 
@@ -834,9 +829,8 @@ engine.preload = function(stuff, progressCallback, callback) {
 
 
 engine.Input = Class.extend({
-	init: function(game) {
+	init: function() {
 		var self = this;
-		this.game = game;
 		this.keys = {};
 		
 		$(document).keydown(function(e) {
@@ -847,12 +841,12 @@ engine.Input = Class.extend({
 			self.keys[engine.Input.keyNames[e.which]] = false;
 		});
 		
-		$(this.game.canvas).bind('mousedown', function(e) {
+		$(engine.settings.currentGame.canvas).bind('mousedown', function(e) {
 			self.mouse[e.which] = true;
 		});
-		$(this.game.canvas).bind('mouseup', function(e) {
+		$(document).bind('mouseup', function(e) {
 			self.mouse[e.which] = false;
-		})
+		});
 		
 		this.mouse = {
 			1: false,
@@ -872,7 +866,7 @@ engine.Input = Class.extend({
 			var y = e.pageY;
 			
 			//normalize to be relative to the canvas
-			var canvasOffset = self.game.$canvas.offset();
+			var canvasOffset = engine.settings.currentGame.$canvas.offset();
 			x -= canvasOffset.left;
 			y -= canvasOffset.top;
 			

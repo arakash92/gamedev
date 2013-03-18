@@ -22,3 +22,8 @@
 .engine a {
 	cursor: pointer;
 }
+.engine .engine-console {
+	top: 39px;
+	left: 8px;
+	position: absolute;
+}
