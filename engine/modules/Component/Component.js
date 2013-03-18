@@ -5,7 +5,9 @@ engine.registerModule('Component', '0.1.0')
         var oldEntity = engine.Entity;
         
         engine.Entity = oldEntity.extend({
-            components: [],
+            init: function(game, name, x, y) {
+                this._super(game, name, x, y);
+            },
             attach: function(name, component) {
                 if (component === undefined) {
                     component = name;

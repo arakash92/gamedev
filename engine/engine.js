@@ -108,6 +108,11 @@ function engine(wrapper, options) {
 	//create two canvases
 	this.wrapper.append('<canvas onContextMenu="return false;" class="engine-canvas"></canvas><canvas style="display: none;" class="engine-buffer"></canvas>');
 	
+	//create a rotation canvas
+	this.wrapper.append('<canvas class="engine-rotationcanvas" style="display: none;"></canvas>');
+	this.rotationCanvas = this.wrapper.find('.engine-rotationcanvas')[0];
+	this.rotationCtx = this.rotationCanvas.getContext('2d');
+
 	//set the canvas
 	this.$canvas = this.wrapper.find('.engine-canvas');
 	this.canvas = this.$canvas[0];
@@ -143,6 +148,8 @@ function engine(wrapper, options) {
 		this.canvas.height = height;
 		this.buffer.width = width;
 		this.buffer.height = height;
+		this.rotationCanvas.width = width;
+		this.rotationCanvas.height = height;
 
 		this.wrapper.css({
 			width: width,
@@ -159,6 +166,7 @@ function engine(wrapper, options) {
 		game: self,
 		statsArray: [],
 		logArray: [],
+		enabled: false,
 		log: function(msg) {
 			var i;
 			for(i in this.log) {
@@ -173,17 +181,19 @@ function engine(wrapper, options) {
 			this.statsArray[key] = value;
 		},
 		renderStats: function(g) {
-			var y = 0;
-			for (i in this.statsArray) {
-				if (this.statsArray[i] !== null) {
-					g.globalAlpha = 1;
-					g.fillStyle = 'white';
-					g.textBaseline = 'top';
-					g.textAlign = 'left';
-					g.font = '12pt monospace';
-					
-					g.fillText(i + ': ' + this.statsArray[i], 10, 10 + (16 * y));
-					y+=1;
+			if (this.enabled == true) {
+				var y = 0;
+				for (i in this.statsArray) {
+					if (this.statsArray[i] !== null) {
+						g.globalAlpha = 1;
+						g.fillStyle = 'white';
+						g.textBaseline = 'top';
+						g.textAlign = 'left';
+						g.font = '12pt monospace';
+						
+						g.fillText(i + ': ' + this.statsArray[i], 10, 10 + (16 * y));
+						y+=1;
+					}
 				}
 			}
 		}
@@ -215,7 +225,21 @@ function engine(wrapper, options) {
 	
 	this.stage = function(scene) {
 		console.log('Staging scene ' + scene.name);
+		
+		//if there is a scene set, unstage it.
+		if (this.scene !== null) {
+			this.scene.unstage();
+		}
+		//now stage the new scene
 		this.scene = scene;
+		this.scene.stage();
+	}
+
+	this.unstage = function() {
+		this.scene.unstage();
+		var stage = this.stage;
+		this.stage = null;
+		return stage;
 	}
 	
 
@@ -252,15 +276,19 @@ function engine(wrapper, options) {
 	
 
 	this.update = function() {
+		this.event.trigger('update_pre');
 		//update
 		if (this.scene !== null) {
 			this.scene.update(self.deltaTime);
 		}
+		this.event.trigger('update_post');
 	};
 	
 	this.render = function() {
+		this.event.trigger('render_pre');
 		//clear buffer
 		this.bufferCtx.clearRect(0,0, this.buffer.width, this.buffer.height);
+		this.rotationCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		
 		//render
 		if (this.scene !== null) {
@@ -273,6 +301,7 @@ function engine(wrapper, options) {
 		//transfer to displayed canvas
 		this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
 		this.ctx.drawImage(this.buffer, 0, 0);
+		this.event.trigger('render_post');
 	};
 	
 	//options
@@ -299,6 +328,7 @@ function engine(wrapper, options) {
 	this.resizeCallback();
 	
 	this.input = new engine.Input(this);
+	this.event = new engine.Event(this);
 
 	console.log('Welcome to engine.js, a game engine without a name.');
 }
@@ -320,14 +350,14 @@ engine.setup = function(settings) {
 
 
 
-/*â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“
+/*------------------------------
  *   Array of loaded modules
  *-----------------------------*/
 engine.modules = [];
 
 
 
-/*â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“â€“
+/*------------------------------
  *   Module class
  *-----------------------------*/
 engine.Module = Class.extend({
@@ -441,7 +471,7 @@ engine.require = function(modules, callback, fromProject) {
 			console.log('Modules loaded. Running callback naow!');
 			clearInterval(interval);
 			callback();
-		}, 100);
+		}, 50);
 	}
 	
 	//load them
@@ -532,7 +562,12 @@ engine.Vector = Class.extend({
 		}else {
 			this.y = 0 - Math.abs(this.y);
 		}
-	}
+	},
+
+	getAngle: function() {
+		return Math.atan2(this.x, this.y);
+		//radians = PI / 180 * angle;
+	},
 });
 
 
@@ -554,13 +589,7 @@ engine.Vector.rotate = function(v, angle) {
 	return new engine.Vector(nx, ny);
 }
 
-/*
-engine.Vector.rotate = function(v, angle) {
-	var newX = Math.cos(angle) * (v.x) - Math.sin(angle) * (v.y);
-	var newY = Math.sin(angle) * (v.x) + Math.cos(angle) * (v.y);
-	return new engine.Vector(newX, newY);
-}
-*/
+
 
 engine.Graphics = Class.extend({
 	init: function(context) {
@@ -572,6 +601,37 @@ engine.Graphics = Class.extend({
 		}
 	},
 });
+
+
+
+
+
+
+engine.Event = Class.extend({
+	init: function(game) {
+		this.game = game;
+		this.listeners = [];
+		console.log('event object initialized');
+	},
+
+	bind: function(event, callback) {
+		this.listeners[event].push(callback);
+	},
+
+	trigger: function(event, params) {
+		//are there any listeners for this event?
+		if (this.listeners[event] !== undefined) {
+			//run them all
+			var i;
+			for(i in this.listeners[event]) {
+				this.listeners[event][i](params);
+			}
+		};
+	},
+
+});
+
+
 
 
 
@@ -589,7 +649,7 @@ engine.sound.init = function() {
 		createjs.Sound.registerPlugins([createjs.WebAudioPlugin, createjs.FlashPlugin]);
 		createjs.Sound.addEventListener('loadComplete', function(e) {
 			if (typeof engine.sound.onComplete[e['id']] === 'function') {
-				engine.sound.onComplete[e['id']]();
+				engine.sound.onComplete[e['id']](e);
 				engine.sound.onComplete.splice(e['id']);
 			}
 		});
@@ -600,7 +660,6 @@ engine.sound.load = function(name, file, complete) {
 	if (typeof complete === 'function') {
 		engine.sound.onComplete[name] = complete;
 	}
-	alert(engine.settings.projectURL + file +' is being loaded');
 	createjs.Sound.registerSound(engine.settings.projectURL + file, name);
 };
 
@@ -646,16 +705,18 @@ engine.preload = function(stuff, callback) {
 
 		if (stuff.project.sounds !== undefined) {
 			loadedStuff['sound'] = {};
-			for(i in loadedStuff['sound']) {
+			for(i in stuff.project.sounds) {
 				loadedStuff['sound'][i] = false;
 			}
-			for(i in stuff.project.sounds) {
-				engine.sound.load(i, stuff.project.sounds[i], function() {
-					loadedStuff['sound'][i] = true;
+			
 
+			for(i in stuff.project.sounds) {
+				engine.sound.load(i, stuff.project.sounds[i], function(e) {
+					loadedStuff['sound'][e.id] = true;
+					
 					for(var ii in loadedStuff['sound']) {
 						if (loadedStuff['sound'][ii] !== true) {
-							return;
+							return false;
 						}
 					}
 					//they're all ready. we can set the entire object to true now
@@ -668,7 +729,6 @@ engine.preload = function(stuff, callback) {
 
 
 	var interval = setInterval(function() {
-		console.log(loadedStuff);
 		for (i in loadedStuff) {
 			if (loadedStuff[i] !== true) {
 				//not ready!, just return
@@ -681,7 +741,7 @@ engine.preload = function(stuff, callback) {
 		clearInterval(interval);
 		callback();
 
-	}, 500);
+	}, 50);
 };
 
 

@@ -4,13 +4,17 @@ engine.registerModule('Scene', '0.1.0')
         
         
         engine.Scene = Class.extend({
-            init: function(name) {
+            init: function(game) {
+                this.game = game;
                 this.layers = [];
                 this.effect = null;
                 this.drawGrid= false;
-                if (typeof name == 'string') {
-                    this.name = name;
-                }
+            },
+            unstage: function() {
+                
+            },
+            stage: function() {
+
             },
             hide: function(effect, options) {
                 if (engine.Scene.Effect[effect] !== undefined) {

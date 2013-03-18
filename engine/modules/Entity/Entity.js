@@ -20,9 +20,9 @@ engine.registerModule('Entity', '0.1.0')
                     this.pos.y = y;
                 }
             },
-            
+
             applyForce: function(force) {
-                
+
             },
             
             update: function(dt) {
