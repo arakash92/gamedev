@@ -2,14 +2,16 @@ engine.registerModule('Entity', '0.1.0')
 	.defines(function() {
 		engine.Entity = Class.extend({
 			init: function(x, y) {
-				this.debug = false;
+				this.debug = true;
+
 				this.pos = new engine.Vector();
+				this.absolutePos = new engine.Vector();
 				this.acceleration = new engine.Vector();
 				this.velocity = new engine.Vector();
-				
-				if (typeof name == 'string') {
-					this.name = name;
-				}
+
+				this.offset = new engine.Vector();
+				this.event = new engine.Event();
+
 				if (x !== undefined) {
 					this.pos.x = x;
 				}
@@ -23,18 +25,26 @@ engine.registerModule('Entity', '0.1.0')
 			},
 			
 			update: function(dt) {
-				if (typeof this.onUpdate == 'function') {
-					this.onUpdate(dt);
-				}
+				this.velocity.reset();
+				this.event.trigger('update_pre');
+
+				this.event.trigger('update');
+
+				this.event.trigger('update_post');
+				this.pos.add(this.velocity);
 			},
 			
 			renderDebug: function(g) {
 				g.fillStyle = 'white';
 				g.textAlign = 'center';
-				g.fillText(this.name, this.pos.x, this.pos.y);
+				g.globalAlpha = 1;
+				g.fillText('Entity', this.absolutePos.x, this.absolutePos.y);
 			},
 			
 			render: function(g) {
+				this.absolutePos.x = this.pos.x;
+				this.absolutePos.y = this.pos.y;
+				this.absolutePos.sub(engine.settings.currentGame.scene.camera.pos);
 				this.renderDebug(g);
 				if (typeof this.onRender == 'function') {
 					this.onRender(g);

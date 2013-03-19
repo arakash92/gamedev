@@ -248,7 +248,7 @@ engine = Class.extend({
 			self.time_now = (new Date()).getTime();
 			self.deltaTime = self.time_now - self.time_last;
 			self.time_last = self.time_now;
-			self.fps = self.frame_time/self.deltaTime*self.options.fps;
+			self.fps = Math.round(self.frame_time/self.deltaTime*self.options.fps);
 			
 			//deltaTime
 			self.deltaTime = self.deltaTime/self.frame_time;
@@ -264,11 +264,12 @@ engine = Class.extend({
 	update: function() {
 		this.event.trigger('update_pre');
 
+		this.console.debug('FPS', this.fps);
+
 		//update
 		if (this.scene !== null) {
 			this.scene.update(self.deltaTime);
 		}
-
 		this.event.trigger('update_post');
 	},
 
@@ -323,21 +324,32 @@ engine.Console = Class.extend({
 		engine.settings.currentGame.wrapper.append('<div class="engine-console"><div class="debug"></div><div class="log"></div></div>');
 		this.wrapperDiv = engine.settings.currentGame.wrapper.find('.engine-console');
 		this.debugDiv = this.wrapperDiv.find('.debug');
+
 		this.debugArray = [];
+		this.logArray = [];
+		this.lastLogTime = (new Date()).getTime();
+		this.logFrequency = 1000;
 
 		setInterval(function() {
+			//debug
 			var i,str = [];
 			for(i in self.debugArray) {
 				str.push(i +': ' + self.debugArray[i]);
 			}
 			self.debugDiv.html(str.join('<br>'));
+			
+			//log
+			i=0;
+			str=[];
+			for(i in self.logArray) str.push(i);
+			self.logDiv.append(str.join('<br>'));
 		}, 500);
 	},
 	debug: function(key, value) {
 		this.debugArray[key] = value;
 	},
-	log: function() {
-
+	log: function(msg, force) {
+		if ((new Date()).getTime() - this.lastLogTime > this.logFrequency) this.debugArray[msg] = true;
 	},
 });
 
@@ -488,7 +500,7 @@ engine.require = function(modules, progress, callback, fromProject) {
 			console.log('Modules loaded. Running callback naow!');
 			clearInterval(interval);
 			callback();
-		}, 20);
+		}, 100);
 	}
 	
 	//load them
@@ -518,6 +530,10 @@ engine.Vector = Class.extend({
 		}
 		this.x = x;
 		this.y = y;
+	},
+
+	toString: function() {
+		return Math.round(this.x) +', ' + Math.round(this.y);
 	},
 
 	limit: function(max) {
@@ -696,7 +712,7 @@ engine.sound.setVolume  = function(volume, type) {
 engine.sound.init = function() {
 	if (engine.sound.initted == false) {
 		engine.sound.initted = true;
-		createjs.Sound.registerPlugins([createjs.WebAudioPlugin, createjs.FlashPlugin]);
+		//createjs.Sound.registerPlugins([createjs.WebAudioPlugin, createjs.FlashPlugin]);
 		createjs.Sound.addEventListener('loadComplete', function(e) {
 			if (typeof engine.sound.onComplete[e['id']] === 'function') {
 				engine.sound.onComplete[e['id']](e);
@@ -707,6 +723,7 @@ engine.sound.init = function() {
 };
 
 engine.sound.load = function(name, file, complete) {
+	console.log('loading sound ' + file +'...');
 	if (typeof complete === 'function') {
 		engine.sound.onComplete[name] = complete;
 	}
@@ -823,7 +840,7 @@ engine.preload = function(stuff, progressCallback, callback) {
 		clearInterval(interval);
 		callback();
 
-	}, 20);
+	}, 100);
 };
 
 

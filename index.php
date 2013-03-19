@@ -315,8 +315,9 @@
 		 * Sound and images
 		 *------------------------------*/
 		//variables
-		var bar = $(".preload-overlay .progress .bar"), loadCount = 0;
-		var loadingText = bar.parent().find('.text');
+		var bar = $(".preload-overlay .progress .bar"),
+			loadCount = 0,
+			loadingText = bar.parent().find('.text');
 
 		engine.preload({
 			core: {
@@ -351,6 +352,7 @@
 			/*------------------------------
 			 * Initialzie the game and load the main menu
 			 *------------------------------*/
+
 			game = new engine('#game', {fps: 60});
 
 
@@ -369,15 +371,31 @@
 
 			var scene = new engine.Scene();
 
+			//camera movement with arrow keys
 			scene.event.bind('update', function(dt) {
-				if (game.input.keys['left_arrow']) scene.camera.x -= 0.5;
-				if (game.input.keys['right_arrow']) scene.camera.x += 0.5;
-				if (game.input.keys['down_arrow']) scene.camera.y += 0.5;
-				if (game.input.keys['up_arrow']) scene.camera.y -= 0.5;
+				if (game.input.keys['left_arrow']) scene.camera.acceleration.x -= 0.2;
+				if (game.input.keys['right_arrow']) scene.camera.acceleration.x += 0.2;
+				if (game.input.keys['down_arrow']) scene.camera.acceleration.y += 0.2;
+				if (game.input.keys['up_arrow']) scene.camera.acceleration.y -= 0.2;
+
+				if (game.input.keys['2']) scene.camera.zoomIn();
+				if (game.input.keys['1']) scene.camera.zoomOut();
 			});
+
+
+			//add some random entities
+			scene.layers[0] = [new engine.Entity(200, 100), new engine.Entity(400, 50), new engine.Entity(700, 500), new engine.Entity(100, 50), new engine.Entity(500, 300)];
 			
-			
-			
+
+			var entity = new engine.Entity(600, 400);
+			entity.attach(new engine.Component.ParticleSystem('particles'));
+			scene.layers[0].push(entity);
+
+
+
+			/*------------------------------
+			 * Stage the scene
+			 *------------------------------*/
 			game.stage(scene);
 
 

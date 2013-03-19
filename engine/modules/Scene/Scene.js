@@ -12,7 +12,7 @@ engine.registerModule('Scene', '0.1.0')
 				this.gridColor = 'white';
 				this.gridWidth = 1;
 				this.event = new engine.Event();
-				this.camera = new engine.Camera();
+				this.camera = new engine.Scene.Camera(0, 0, engine.settings.currentGame.canvas.width, engine.settings.currentGame.canvas.height);
 			},
 			unstage: function() {
 				this.event.trigger('unstage');
@@ -27,6 +27,10 @@ engine.registerModule('Scene', '0.1.0')
 			},
 			update: function(dt) {
 				this.event.trigger('update', dt);
+
+				//update camera
+				this.camera.update();
+
 				//update layers
 				var i,layer;
 				for (i in this.layers) {
@@ -42,11 +46,10 @@ engine.registerModule('Scene', '0.1.0')
 				}
 			},
 			drawGrid: function(g, force) {
-				engine.settings.currentGame.console.debug('Camera', this.camera.x +', ' + this.camera.y);
 				if (this.debug  === true || force === true) {
 
-					var gridOffsetX = Math.abs(this.camera.x) % this.gridSize,
-						gridOffsetY = Math.abs(this.camera.y) % this.gridSize,
+					var gridOffsetX = Math.abs(this.camera.pos.x) % this.gridSize,
+						gridOffsetY = Math.abs(this.camera.pos.y) % this.gridSize,
 						gridSize = this.gridSize,
 						x,
 						y,
@@ -61,14 +64,13 @@ engine.registerModule('Scene', '0.1.0')
 					g.globalAlpha = this.gridAlpha;
 					g.beginPath();
 
-					if (this.camera.x < 0) {
+					if (this.camera.pos.x < 0) {
 						gridOffsetX = 0 - Math.abs(gridOffsetX);
 					}
 					
-					if (this.camera.y < 0) {
+					if (this.camera.pos.y < 0) {
 						gridOffsetY = 0 - Math.abs(gridOffsetY);
 					}
-					
 
 					for(x=-1; x < gridX+1; x++) {
 						for(y=-1; y < gridY+1; y++) {
@@ -132,30 +134,89 @@ engine.registerModule('Scene', '0.1.0')
 		});
 
 		engine.Scene.Camera = Class.extend({
-			init: function(width, height) {
-				this.pos = new engine.Vector();
+			init: function(x, y, width, height) {
+				this.event = new engine.Event();
+
 				this.width = width;
 				this.height = height;
+				this.pos = new engine.Vector();
 				this.acceleration = new engine.Vector();
-				this.maxSpeed = 0.5;
+				this.velocity = new engine.Vector();
+				this.maxSpeed = 3;
+				this.zoomLevel = 1.0;
+			},
+			zoomIn: function(zoom) {
+				this.zoomLevel += 1;
+				engine.settings.currentGame.ctx.scale(1.1, 1.1);
+				engine.settings.currentGame.bufferCtx.scale(1.1, 1.1);
+				engine.settings.currentGame.rotationCtx.scale(1.1, 1.1);
+			},
+			zoomOut: function() {
+				if (this.zoomLevel > 1.0) {
+					this.zoomLevel -= 1;
+					engine.settings.currentGame.ctx.scale(0.9, 0.9);
+					engine.settings.currentGame.bufferCtx.scale(0.9, 0.9);
+					engine.settings.currentGame.rotationCtx.scale(0.9, 0.9);
+				}
+			},
+			getArea: function() {
+				return {
+					left: this.pos.x,
+					right: this.pos.x + this.width,
+					top: this.pos.y,
+					bottom: this.pos.y + this.height,
+					centerX: this.pos.x + (this.width/2),
+					centerY: this.pos.y + (this.height/2),
+				};
 			},
 			update: function() {
-				this.velocity.reset();
+				engine.settings.currentGame.console.debug('Camera Zoom', this.zoomLevel);
+				engine.settings.currentGame.console.debug('Camera acceleration', this.acceleration.toString());
 				this.event.trigger('update_pre');
+				/////////////////////////////////
 
+				this.velocity.reset();
 
+				this.event.trigger('update');
 
+				//deccelerate
+				if (this.acceleration.x > 0) {
+					this.acceleration.x -= this.maxSpeed / 30;
+					if (this.acceleration.x < 0) {
+						this.acceleration.x = 0;
+					}
+				}else if (this.acceleration.x < 0) {
+					this.acceleration.x += this.maxSpeed / 30;
+					if (this.acceleration.x > 0) {
+						this.acceleration.x = 0;
+					}
+				}
+				
+				if (this.acceleration.y > 0) {
+					this.acceleration.y -= this.maxSpeed / 30;
+					if (this.acceleration.y < 0) {
+						this.acceleration.y = 0;
+					}
+				}else if (this.acceleration.y < 0) {
+					this.acceleration.y += this.maxSpeed / 30;
+					if (this.acceleration.y > 0) {
+						this.acceleration.y = 0;
+					}
+				}
+
+				//limit acceleration, both positive and negative
+				this.acceleration.limit(this.maxSpeed);
+				this.acceleration.limit(0 - Math.abs(this.maxSpeed));
+
+				this.velocity.add(this.acceleration);
+
+				this.pos.add(this.velocity);
+
+				/////////////////////////////////
 				this.event.trigger('update_post');
 			},
 		});
 
-		engine.Camera = engine.Vector.extend({
-			init: function(x, y, width, height) {
-				this._super(x,y);
-				this.width = width;
-				this.height = height;
-			}
-		});
 
 
 	});

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<script type="text/javascript" src="http://code.createjs.com/createjs-2013.02.12.min.js"></script>
+</head>
+<body>
+
+	<script type="text/javascript">
+	createjs.Sound.addEventListener("loadComplete", function(e) {
+		console.log(createjs.Sound.play(e.id));
+	});
+	createjs.Sound.registerSound("darkshift/sounds/roaming.ogg", "sound");
+	</script>
+
+</body>
+</html>
