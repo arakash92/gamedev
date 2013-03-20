@@ -29,7 +29,7 @@ engine.registerModule('Scene', '0.1.0')
 				this.event.trigger('update', dt);
 
 				//update camera
-				this.camera.update();
+				this.camera.update(dt);
 
 				//update layers
 				var i,layer;
@@ -169,7 +169,7 @@ engine.registerModule('Scene', '0.1.0')
 					centerY: this.pos.y + (this.height/2),
 				};
 			},
-			update: function() {
+			update: function(dt) {
 				engine.settings.currentGame.console.debug('Camera Zoom', this.zoomLevel);
 				engine.settings.currentGame.console.debug('Camera acceleration', this.acceleration.toString());
 				this.event.trigger('update_pre');
@@ -209,8 +209,8 @@ engine.registerModule('Scene', '0.1.0')
 				this.acceleration.limit(0 - Math.abs(this.maxSpeed));
 
 				this.velocity.add(this.acceleration);
-
-				this.pos.add(this.velocity);
+				
+				this.pos.add(this.velocity.clone().mult(dt));
 
 				/////////////////////////////////
 				this.event.trigger('update_post');

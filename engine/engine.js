@@ -81,6 +81,7 @@
 	  // All construction is actually done in the init method
 	  if ( !initializing && this.init )
 		this.init.apply(this, arguments);
+
 	}
    
 	// Populate our constructed prototype object
@@ -265,10 +266,11 @@ engine = Class.extend({
 		this.event.trigger('update_pre');
 
 		this.console.debug('FPS', this.fps);
+		this.console.debug('DT', this.deltaTime);
 
 		//update
 		if (this.scene !== null) {
-			this.scene.update(self.deltaTime);
+			this.scene.update(this.deltaTime);
 		}
 		this.event.trigger('update_post');
 	},
@@ -324,6 +326,7 @@ engine.Console = Class.extend({
 		engine.settings.currentGame.wrapper.append('<div class="engine-console"><div class="debug"></div><div class="log"></div></div>');
 		this.wrapperDiv = engine.settings.currentGame.wrapper.find('.engine-console');
 		this.debugDiv = this.wrapperDiv.find('.debug');
+		this.logDiv = this.wrapperDiv.find('.log');
 
 		this.debugArray = [];
 		this.logArray = [];
@@ -349,7 +352,11 @@ engine.Console = Class.extend({
 		this.debugArray[key] = value;
 	},
 	log: function(msg, force) {
-		if ((new Date()).getTime() - this.lastLogTime > this.logFrequency) this.debugArray[msg] = true;
+		var now = (new Date()).getTime();
+		if (now - this.lastLogTime > this.logFrequency) {
+			this.logArray[msg] = true;
+			this.lastLogTime = now;
+		}
 	},
 });
 
@@ -384,31 +391,34 @@ engine.modules = [];
  *   Module class
  *-----------------------------*/
 engine.Module = Class.extend({
-	dependencies: null,
 	init: function(name, version) {
-		console.log('Engine.module.init: ' +name +'');
+		console.log('engine.Module extended for ' + name);
+		this.dependencies = null;
 		this.name = name;
 		this.version = version;
 	},
 	depends: function(modules) {
-		console.log('Engine.module.depends: ' + modules);
+		
 		this.dependencies = modules;
 		return this;
 	},
 	defines: function(what) {
-		console.log('engine.Module.defines ' + this.name + '...');
+		console.log(this.name +' is being defined...');
 		var self = this;
 		//do we have any dependencies?
 		if (this.dependencies !== null) {
-			console.log('has dependencies...');
+			console.log(this.name + ' Depends on ' + this.dependencies);
+			console.log(engine.modules);
 			var i;
 			
 			//load them
 			engine.require(this.dependencies, function() {
+				console.log(self.name +' successfully loaded, yay!');
 				engine.modules[self.name] = self;
 				what();
 			});
 		}else if (typeof what === 'function') {
+			console.log(this.name +' successfully loaded, yay!');
 			engine.modules[this.name] = this;
 			what();
 		}
@@ -423,6 +433,7 @@ engine.registerModule = function(name, version) {
 };
 
 engine.loadModule = function(name, callback, fromProject) {
+	console.log('loadModule ' + name)
 	var path;
 	if (fromProject === true) {
 		path = engine.settings.projectURL;
@@ -431,7 +442,8 @@ engine.loadModule = function(name, callback, fromProject) {
 	}
 	//check if the module is not loaded
 	if (engine.modules[name] === undefined) {
-		console.log('loading modules ' + name +'...');
+		console.log(name +' is not loaded, loading it...');
+		console.log('loading module ' + name +'...');
 		//load it
 		
 		//do we have a callback?
@@ -449,6 +461,10 @@ engine.loadModule = function(name, callback, fromProject) {
 		$("head").append('<script type="text/javascript" src="' +path +'modules/' +name +'/' +name +'.js"></script>');
 		
 	}else {
+		if (typeof callback === 'function') {
+			console.log('running callback');
+			callback();
+		}
 		console.log('module ' + name +' is already loaded, don\'t need to load it again :P');
 		return false;
 	}
@@ -460,6 +476,8 @@ engine.require = function(modules, progress, callback, fromProject) {
 		fromProject = undefined;
 		progress = undefined;
 	}
+	console.log('require callback is:');
+	console.log(callback);
 	var path;
 	if (fromProject === true) {
 		if (engine.settings.projectURL === undefined) {
@@ -478,22 +496,21 @@ engine.require = function(modules, progress, callback, fromProject) {
 	modules = modules.replace(' ', '');
 	modules = modules.split(',');
 	
-	var plural;
-	if (modules.length > 1) {
-		plural = 's';
-	}else {
-		plural = '';
-	}
+	var plural = (modules.length > 1) ? 's' : '';
 	
 	var from = (fromProject === true) ? 'project' : 'core';
 	
 	console.log('Requireing ' + modules.length +' module' + plural +' from ' + from +' (' +modules.join(', ') +')');
 	//is the callback callback defined?
 	if (typeof callback === 'function') {
+		console.log('require: creating interval...');
 		var interval = setInterval(function() {
+			console.log('require interval...');
 			var i;
 			for(i in modules) {
+
 				if (engine.modules[modules[i]] === undefined) {
+					console.log('false');
 					return false;
 				}
 			}
@@ -530,6 +547,7 @@ engine.Vector = Class.extend({
 		}
 		this.x = x;
 		this.y = y;
+		return this;
 	},
 
 	toString: function() {
@@ -552,31 +570,37 @@ engine.Vector = Class.extend({
 				this.y = max;
 			}
 		}
+		return this;
 	},
 	
 	reset: function() {
 		this.x = 0;
 		this.y = 0;
+		return this;
 	},
 	
 	add: function(v) {
 		this.x += v.x;
 		this.y += v.y;
+		return this;
 	},
 
 	sub: function(v) {
 		this.x -= v.x;
 		this.y -= v.y;
+		return this;
 	},
 
 	mult: function(num) {
 		this.x *= num;
 		this.y *= num;
+		return this;
 	},
 
 	div: function(num) {
 		this.x = this.x / num;
 		this.y = this.y / num;
+		return this;
 	},
 
 	mag: function() {
@@ -588,6 +612,7 @@ engine.Vector = Class.extend({
 		if (mag !== 0) {
 			this.div(this.mag());
 		}
+		return this;
 	},
 	
 	invert: function() {
@@ -601,16 +626,21 @@ engine.Vector = Class.extend({
 		}else {
 			this.y = 0 - Math.abs(this.y);
 		}
+		return this;
 	},
 
 	getAngle: function() {
 		return Math.atan2(this.x, this.y);
 		//radians = PI / 180 * angle;
 	},
+
+	clone: function() {
+		return new engine.Vector(this.x, this.y);
+	}
 });
 
 
-
+//move this to a new utility.js or the top of he file
 Math.degToRad = function(degrees) {
 	return degrees * (Math.PI/180);
 }
@@ -618,6 +648,7 @@ Math.radToDeg = function(radians) {
 	return radians * (180/Math.PI);
 }
 
+//change this to reflect the vector cloning convention.
 engine.Vector.rotate = function(v, angle) {
 	var s = Math.sin(angle);
 	var c = Math.cos(angle);
@@ -648,7 +679,6 @@ engine.Graphics = Class.extend({
 engine.Event = Class.extend({
 	init: function() {
 		this.listeners = [];
-		console.log('event object initialized');
 	},
 
 	bind: function(event, callback) {

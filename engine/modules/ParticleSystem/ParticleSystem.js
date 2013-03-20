@@ -2,13 +2,20 @@ engine.registerModule('ParticleSystem', '0.1.0')
 	.depends('Component')
 	.defines(function() {
 		
-		engine.Component.ParticleSystem = engine.Component.extend({
+		engine.components.ParticleSystem = engine.Component.extend({
+			particle: Class.extend({				
+				init: function(x, y) {
+					this.pos = new engine.Vector(x,y);
+					this.color = 'white';
+					this.shape = 'rect';
+				},
+			}),
 			init: function(name, options) {
 				this._super(name);
 				this.frozen = false;
 				this.particles = [];
-				this.birthCycle = [];
 				this.particlesAlive = 0;
+				this.birthCycle = 0;
 				this.options = {
 					maxParticles: 200,
 					birthRate: 6,
@@ -32,7 +39,7 @@ engine.registerModule('ParticleSystem', '0.1.0')
 			},
 			update: function(dt) {
 				//increment birthCycle
-				this.birthCycle+= 1 / this.options.birthRate;
+				this.birthCycle+= (1 / this.options.birthRate)*dt;
 				
 				//spawn particles
 				if (this.birthCycle >= 1) {
@@ -49,20 +56,6 @@ engine.registerModule('ParticleSystem', '0.1.0')
 				for(i in this.particles) {
 					p = this.particles[i];
 				}
-			},
-		});
-		
-		
-		
-		//particle Class
-		engine.Component.ParticleSystem.Particle = Class.extend({
-			pos: new engine.Vector(),
-			color: null,
-			shape: 'rect',
-			
-			init: function(x, y) {
-				this.pos.x = x;
-				this.pos.y = y;
 			},
 		});
 		

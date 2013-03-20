@@ -2,6 +2,10 @@ engine.registerModule('Component', '0.1.0')
     .depends('Entity')
     .defines(function() {
         
+        if (engine.components === undefined) {
+            engine.components = {};
+        }
+
         var oldEntity = engine.Entity;
         
         engine.Entity = oldEntity.extend({
@@ -51,12 +55,11 @@ engine.registerModule('Component', '0.1.0')
         });
         
         engine.Component = Class.extend({
-            entity: null,
-            active: true,//whether it will be updated or not
-            visible: true,//whether it is visible or not
-            
             init: function(name) {
                 this.name = name;
+                this.entity = null;
+                this.active = true;//whether it will be updated or not
+                this.visible = true;//whether it is visible or not
             },
             attached: function(entity) {
                 this.entity = entity;

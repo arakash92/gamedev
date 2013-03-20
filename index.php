@@ -14,7 +14,6 @@
 	<!-- jquery UI css -->
 	<link rel="stylesheet" type="text/css" hreF="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css">
 	
-
 	<!--bootsrap js-->
 	<script src="engine/lib/bootstrap/js/bootstrap.min.js"></script>
 
@@ -29,7 +28,16 @@
 	
 	<!--engine JS-->
 	<script type="text/javascript" src="engine/engine.js"></script>
-
+	<script type="text/javascript">
+		engine.setup({
+			'engineURL': 'http://localhost/gamedev/engine/',
+			'projectURL': 'http://localhost/gamedev/darkshift/',
+		});
+	</script>
+	<script type="text/javascript" src="engine/modules/Entity/Entity.js"></script>
+	<script type="text/javascript" src="engine/modules/Component/Component.js"></script>
+	<script type="text/javascript" src="engine/modules/ParticleSystem/ParticleSystem.js"></script>
+	<script type="text/javascript" src="engine/modules/Scene/Scene.js"></script>
 	<link rel="stylesheet" type="text/css" href="engine/engine.css">
 
 	<!-- less.js (parses LESS files) -->
@@ -219,14 +227,15 @@
 		</div>
 		
 	</div>
-	
+
+
 	<script type="text/javascript">
 	   	/*------------------------------
 	   	 * First, setup engine and project URL's
 	   	 *------------------------------*/
 		engine.setup({
-			'engineURL': 'http://84.212.5.59/gamedev/engine/',
-			'projectURL': 'http://84.212.5.59/gamedev/darkshift/',
+			'engineURL': 'http://localhost/gamedev/engine/',
+			'projectURL': 'http://localhost/gamedev/darkshift/',
 		});
 		
 
@@ -319,6 +328,7 @@
 			loadCount = 0,
 			loadingText = bar.parent().find('.text');
 
+		
 		engine.preload({
 			core: {
 				modules: 'Entity,Scene,ParticleSystem',
@@ -384,12 +394,14 @@
 
 
 			//add some random entities
-			scene.layers[0] = [new engine.Entity(200, 100), new engine.Entity(400, 50), new engine.Entity(700, 500), new engine.Entity(100, 50), new engine.Entity(500, 300)];
+			//scene.layers[0] = [new engine.Entity(200, 100), new engine.Entity(400, 50), new engine.Entity(700, 500), new engine.Entity(100, 50), new engine.Entity(500, 300)];
 			
 
 			var entity = new engine.Entity(600, 400);
-			entity.attach(new engine.Component.ParticleSystem('particles'));
-			scene.layers[0].push(entity);
+			console.log(engine.components);
+			var particles = new engine.components.ParticleSystem('particles');
+			entity.attach(particles);
+			scene.layers[0] = [entity];
 
 
 
