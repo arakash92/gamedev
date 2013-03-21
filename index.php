@@ -30,15 +30,18 @@
 	<script type="text/javascript" src="engine/engine.js"></script>
 	<script type="text/javascript">
 		engine.setup({
-			'engineURL': 'http://localhost/gamedev/engine/',
-			'projectURL': 'http://localhost/gamedev/darkshift/',
+			'engineURL': 'http://84.212.5.59/gamedev/engine/',
+			'projectURL': 'http://84.212.5.59/gamedev/darkshift/',
 		});
 	</script>
 	<script type="text/javascript" src="engine/modules/Entity/Entity.js"></script>
 	<script type="text/javascript" src="engine/modules/Component/Component.js"></script>
 	<script type="text/javascript" src="engine/modules/ParticleSystem/ParticleSystem.js"></script>
 	<script type="text/javascript" src="engine/modules/Scene/Scene.js"></script>
-	<link rel="stylesheet" type="text/css" href="engine/engine.css">
+	<script type="text/javascript" src="darkshift/modules/Player/Player.js"></script>
+
+	<!-- engine.less -->
+	<link rel="stylesheet/less" type="text/css" href="engine/engine.less">
 
 	<!-- less.js (parses LESS files) -->
 	<script type="text/javascript" src="engine/lib/less/less.js"></script>
@@ -234,8 +237,8 @@
 	   	 * First, setup engine and project URL's
 	   	 *------------------------------*/
 		engine.setup({
-			'engineURL': 'http://localhost/gamedev/engine/',
-			'projectURL': 'http://localhost/gamedev/darkshift/',
+			'engineURL': 'http://84.212.5.59/gamedev/engine/',
+			'projectURL': 'http://84.212.5.59/gamedev/darkshift/',
 		});
 		
 
@@ -331,12 +334,13 @@
 		
 		engine.preload({
 			core: {
-				modules: 'Entity,Scene,ParticleSystem',
+				//modules: 'Entity,Scene,ParticleSystem',
 			},
 			project: {
-				modules: 'mainMenu',
+				modules: 'mainMenu,Crosshair',
 				sounds: {
 					'music_roaming': 'sounds/roaming.ogg',
+					'player_turret_01': 'sounds/turret_01.ogg',
 					'ui_up': 'sounds/ui/up.ogg',
 					'ui_down': 'sounds/ui/down.ogg',
 					'ui_select': 'sounds/ui/select.ogg',
@@ -379,7 +383,10 @@
 			 *------------------------------*/
 			$(".gui-mainmenu").hide();
 
-			var scene = new engine.Scene();
+			var scene = new engine.Scene('Test');
+
+			var music = engine.sound.get('music_roaming');
+			music.play();
 
 			//camera movement with arrow keys
 			scene.event.bind('update', function(dt) {
@@ -396,25 +403,39 @@
 			//add some random entities
 			//scene.layers[0] = [new engine.Entity(200, 100), new engine.Entity(400, 50), new engine.Entity(700, 500), new engine.Entity(100, 50), new engine.Entity(500, 300)];
 			
+			//create entity
 
-			var entity = new engine.Entity(600, 400);
-			console.log(engine.components);
-			var particles = new engine.components.ParticleSystem('particles');
-			entity.attach(particles);
-			scene.layers[0] = [entity];
+			var playerSprite = new Image();
+			var player = new engine.Player(600,400);
+			player.attach(new engine.components.Crosshair('crosshair'));
+			scene.layers[0] = [player];
+
+			playerSprite.onload = function() {
+				player.sprite = playerSprite;
+				//make camera follow player
+				player.event.bind('update', function() {
+					
+				});
+
+				/*------------------------------
+				 * Stage the scene
+				 *------------------------------*/
+				game.stage(scene);
+
+
+				/*------------------------------
+				 * Run!
+				 *------------------------------*/
+				game.run();
+			};
+			playerSprite.src = 'http://84.212.5.59/gamedev/darkshift/images/player.png';
+
+			
 
 
 
-			/*------------------------------
-			 * Stage the scene
-			 *------------------------------*/
-			game.stage(scene);
 
-
-			/*------------------------------
-			 * Run!
-			 *------------------------------*/
-			game.run();
+			
 		});
 
 	

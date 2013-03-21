@@ -1,7 +1,5 @@
 engine.registerModule('Scene', '0.1.0')
 	.defines(function() {
-		
-		
 		engine.Scene = Class.extend({
 			init: function() {
 				this.layers = [];
@@ -170,8 +168,11 @@ engine.registerModule('Scene', '0.1.0')
 				};
 			},
 			update: function(dt) {
-				engine.settings.currentGame.console.debug('Camera Zoom', this.zoomLevel);
+
+
+				engine.settings.currentGame.console.debug('Camera Position', this.pos.toString());
 				engine.settings.currentGame.console.debug('Camera acceleration', this.acceleration.toString());
+				engine.settings.currentGame.console.debug('Camera Zoom', this.zoomLevel);
 				this.event.trigger('update_pre');
 				/////////////////////////////////
 

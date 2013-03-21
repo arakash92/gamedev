@@ -1,10 +1,10 @@
 engine.registerModule('Player', '0.1.0')
-	.depends('Entity')
+	
 	.defines(function() {
 		
 		engine.Player = engine.Entity.extend({
-			init: function(game, name, x, y) {
-				this._super(game, name, x, y);
+			init: function(x, y) {
+				this._super(x, y);
 				this.health = 100;
 				this.speed = 1;
 				this.maxSpeed = 4;
@@ -17,13 +17,14 @@ engine.registerModule('Player', '0.1.0')
 				this.angle = 0;
 			},
 			update: function(dt) {
-				
+				//parent update
+				this._super(dt);
 				//update HUD
-				$(".gui-hud .health").html(this.health);
+				//$(".gui-hud .health").html(this.health);
 
 				//get direction
-				this.direction.x = this.game.input.mouse.pos.x;
-				this.direction.y = this.game.input.mouse.pos.y;
+				this.direction.x = engine.settings.currentGame.input.mouse.absolutePos.x;
+				this.direction.y = engine.settings.currentGame.input.mouse.absolutePos.y;
 				this.direction.sub(this.pos);
 				this.direction.normalize();
 
@@ -32,28 +33,28 @@ engine.registerModule('Player', '0.1.0')
 
 				//constrain to screen
 				if (this.pos.x < 0) {
-					this.pos.x = 0;
-				}else if (this.pos.x > this.game.canvas.width) {
-					this.pos.x = this.game.canvas.width;
+					//this.pos.x = 0;
+				}else if (this.pos.x > engine.settings.currentGame.canvas.width) {
+					//this.pos.x = engine.settings.currentGame.canvas.width;
 				}
 				if (this.pos.y < 0) {
-					this.pos.y = 0;
-				}else if (this.pos.y > this.game.canvas.height) {
-					this.pos.y = this.game.canvas.height;
+					//this.pos.y = 0;
+				}else if (this.pos.y > engine.settings.currentGame.canvas.height) {
+					//this.pos.y = engine.settings.currentGame.canvas.height;
 				}
 				
 				
 				//update bullets
 				for(var i in this.bullets) {
 					var b = this.bullets[i];
-					if (b.pos.x > 0 || b.pos.x < this.game.canvas.width || b.pos.y > 0 || b.pos.y < this.game.canvas.height) {
+					if (b.pos.x > 0 || b.pos.x < engine.settings.currentGame.canvas.width || b.pos.y > 0 || b.pos.y < engine.settings.currentGame.canvas.height) {
 						b.update(dt);
 					}
 				}
 				//delete bullets
 				for(i in this.bullets) {
 					var b = this.bullets[i];
-					if (b.pos.x > 0 || b.pos.x < this.game.canvas.width || b.pos.y > 0 || b.pos.y < this.game.canvas.height) {
+					if (b.pos.x > 0 || b.pos.x < engine.settings.currentGame.canvas.width || b.pos.y > 0 || b.pos.y < engine.settings.currentGame.canvas.height) {
 						this.bullets.splice[i];
 					}
 				}
@@ -61,18 +62,18 @@ engine.registerModule('Player', '0.1.0')
 				
 				
 				//shoot
-				if (this.game.input.mouse[1] && this.game.time_now - this.lastShot > this.shootTimer) {
+				if (engine.settings.currentGame.input.mouse[1] && engine.settings.currentGame.time_now - this.lastShot > this.shootTimer) {
 					this.shooting = true;
 					this.shoot();
 					//push backwards
 					var shootForce = new engine.Vector(this.direction.x, this.direction.y);
 					shootForce.invert();
-					shootForce.mult(10);
+					shootForce.mult(3);
 					shootForce.add(new engine.Vector(-1 + Math.random()*2, -1 + Math.random()*2));
 					this.acceleration.add(shootForce);
 					
 					//whenever we shoot, we want to move backwards a littlebit
-					this.lastShot = this.game.time_now;
+					this.lastShot = engine.settings.currentGame.time_now;
 				}else {
 					this.shooting = false;
 				}
@@ -110,19 +111,19 @@ engine.registerModule('Player', '0.1.0')
 				//handle movement
 				this.moving = false;
 
-				if (this.game.input.keys['w']) {
+				if (engine.settings.currentGame.input.keys['w']) {
 					this.moving = true;
 					this.acceleration.y -= this.speed;
 				}
-				if (this.game.input.keys['s']) {
+				if (engine.settings.currentGame.input.keys['s']) {
 					this.moving = true;
 					this.acceleration.y += this.speed;
 				}
-				if (this.game.input.keys['a']) {
+				if (engine.settings.currentGame.input.keys['a']) {
 					this.moving = true;
 					this.acceleration.x -= this.speed;
 				}
-				if (this.game.input.keys['d']) {
+				if (engine.settings.currentGame.input.keys['d']) {
 					this.moving = true;
 					this.acceleration.x += this.speed;
 				}
@@ -142,18 +143,16 @@ engine.registerModule('Player', '0.1.0')
 			},
 			
 			render: function(g) {
-				//this.renderDebug(g);
-				
+				this._super(g);
+
+				g.globalAlpha = 1;
+
 				var i;
 				for(i in this.bullets) {
 					this.bullets[i].render(g);
 				}
 				
-				function rotateVector(v, angle) {
-					var newX = Math.cos(angle) * (v.x) - Math.sin(angle) * (v.y);
-					var newY = Math.sin(angle) * (v.x) + Math.cos(angle) * (v.y);
-					return new engine.Vector(newX, newY);
-				}
+				
 				
 				/*
 				var top = new engine.Vector(this.direction.x, this.direction.y);
@@ -182,35 +181,38 @@ engine.registerModule('Player', '0.1.0')
 				*/
 				
 				
-				var rotationCtx = this.game.rotationCtx;
+				var rotationCtx = engine.settings.currentGame.rotationCtx;
 				rotationCtx.save();
 
-				rotationCtx.translate( this.pos.x, this.pos.y);
+				rotationCtx.translate( this.absolutePos.x, this.absolutePos.y);
 				var angle = 135 - this.angle;
 				rotationCtx.rotate( angle );
 				rotationCtx.drawImage( this.sprite, -24, -24, 48, 48);
 
 				rotationCtx.restore();
 				
-				g.drawImage(this.game.rotationCanvas, 0, 0);
+				g.drawImage(engine.settings.currentGame.rotationCanvas, 0, 0);
 
 			},
 			
 			shoot: function() {
-
+				var self = this;
 				//play turret_01
-				var instance = engine.sound.get('turret_01');
+				var instance = engine.sound.get('player_turret_01');
 				instance.setVolume(0.4);
 				instance.play();
 
 				//spawn a new bullet at the player
 				var bullet = {
 					pos: new engine.Vector(),
+					absolutePos: new engine.Vector(),
 					velocity: new engine.Vector(),
 					direction: new engine.Vector(),
 					acceleration: new engine.Vector(),
 					maxSpeed: 5,
 					update: function(dt) {
+						this.absolutePos.x = this.pos.x - engine.settings.currentGame.scene.camera.pos.x;
+						this.absolutePos.y = this.pos.y - engine.settings.currentGame.scene.camera.pos.y;
 						this.velocity.reset();
 						
 						//set the direction
@@ -227,9 +229,10 @@ engine.registerModule('Player', '0.1.0')
 					render: function(g) {
 						g.fillStyle = 'white';
 						g.strokeStyle = 'white';
+						g.globalAlpha = 1;
 						g.beginPath();
-						g.moveTo(this.pos.x,this.pos.y);
-						g.lineTo(this.pos.x+ this.direction.x*15,this.pos.y+this.direction.y*15);
+						g.moveTo(this.absolutePos.x,this.absolutePos.y);
+						g.lineTo(this.absolutePos.x+ this.direction.x*15,this.absolutePos.y+this.direction.y*15);
 						g.stroke();
 						//g.fillRect(this.pos.x-2, this.pos.y-2, 4, 4);
 					},
@@ -243,7 +246,6 @@ engine.registerModule('Player', '0.1.0')
 				bullet.direction.x = this.direction.x;
 				bullet.direction.y = this.direction.y;
 				
-				//console.log(bullet.direction);
 				this.bullets.push(bullet);
 			},
 			

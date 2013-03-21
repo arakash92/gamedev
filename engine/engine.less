@@ -1,0 +1,67 @@
+.engine {
+	border: 1px solid #444;
+	border-top: 1px solid #666;
+	border-bottom: 1px solid #333;
+	background: #000;
+	
+	position: absolute;
+	cursor: none;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+
+	* {
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		-khtml-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+		cursor: none;
+	}
+
+	.engine-canvas {
+		position: absolute;
+		top: 0px;
+		z-index: 10;
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		-khtml-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+	}
+
+	a {
+		cursor: pointer;
+	}
+	.engine-console {
+		cursor: default;
+		padding-top: 30px;
+		position: absolute;
+		height: 100%;
+		max-width: 400px;
+		z-index: 19;
+
+		.debug {
+			background: rgba(0,0,0,0.3);
+			border: 1px solid rgba(255,255,255,0.3);
+			margin: 10px;
+			padding: 4px 6px;
+			max-height: 30%;
+			overflow-y: scroll;
+		}
+
+		.log {
+			background: rgba(0,0,0,0.3);
+			border: 1px solid rgba(255,255,255,0.3);
+			margin: 10px;
+			padding: 4px 6px;
+			max-height: 30%;
+			overflow-y: scroll;
+		}
+	}
+}

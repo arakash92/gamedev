@@ -333,6 +333,13 @@ engine.Console = Class.extend({
 		this.lastLogTime = (new Date()).getTime();
 		this.logFrequency = 1000;
 
+		this.logDiv.bind('mouseover', function() {
+			$(this).addClass('hover');
+		});
+		this.logDiv.bind('mouseleave', function() {
+			$(this).removeClass('hover');
+		});
+
 		setInterval(function() {
 			//debug
 			var i,str = [];
@@ -342,10 +349,22 @@ engine.Console = Class.extend({
 			self.debugDiv.html(str.join('<br>'));
 			
 			//log
-			i=0;
-			str=[];
-			for(i in self.logArray) str.push(i);
-			self.logDiv.append(str.join('<br>'));
+			i=0,str='';
+			self.logDiv.html("");
+			for(i in self.logArray) {
+				var msg = self.logArray[i];
+				str = msg.msg;
+				if (msg.count > 0)
+					{str += ' (' +msg.count +')';
+				}
+				self.logDiv.append(str +'<br>');
+			}
+			//auto-scroll down, unless we are hovering it
+			if (!self.logDiv.hasClass('hover')) {
+				self.logDiv.prop({
+					scrollTop: self.logDiv.prop('scrollHeight'),
+				});
+			}
 		}, 500);
 	},
 	debug: function(key, value) {
@@ -353,8 +372,12 @@ engine.Console = Class.extend({
 	},
 	log: function(msg, force) {
 		var now = (new Date()).getTime();
-		if (now - this.lastLogTime > this.logFrequency) {
-			this.logArray[msg] = true;
+		if (now - this.lastLogTime > this.logFrequency || force === true) {
+			if (this.logArray[msg] !== undefined) {
+				this.logArray[msg].count++;
+			}else {
+				this.logArray[msg] = {'count':0,'msg':msg};
+			}
 			this.lastLogTime = now;
 		}
 	},
@@ -503,18 +526,14 @@ engine.require = function(modules, progress, callback, fromProject) {
 	console.log('Requireing ' + modules.length +' module' + plural +' from ' + from +' (' +modules.join(', ') +')');
 	//is the callback callback defined?
 	if (typeof callback === 'function') {
-		console.log('require: creating interval...');
 		var interval = setInterval(function() {
-			console.log('require interval...');
 			var i;
 			for(i in modules) {
 
 				if (engine.modules[modules[i]] === undefined) {
-					console.log('false');
 					return false;
 				}
 			}
-			console.log('Modules loaded. Running callback naow!');
 			clearInterval(interval);
 			callback();
 		}, 100);
@@ -552,6 +571,33 @@ engine.Vector = Class.extend({
 
 	toString: function() {
 		return Math.round(this.x) +', ' + Math.round(this.y);
+	},
+
+	decrease: function(num) {
+		//x
+		if (this.x > 0) {
+			this.x -= num;
+			if (this.x < 0) {
+				this.x = 0;
+			}
+		}else if (this.x < 0) {
+			this.x += num;
+			if (this.x > 0) {
+				this.x = 0;
+			}
+		}
+		//y
+		if (this.y > 0) {
+			this.y -= num;
+			if (this.y < 0) {
+				this.y = 0;
+			}
+		}else if (this.y < 0) {
+			this.y += num;
+			if (this.y > 0) {
+				this.y = 0;
+			}
+		}
 	},
 
 	limit: function(max) {
@@ -646,6 +692,13 @@ Math.degToRad = function(degrees) {
 }
 Math.radToDeg = function(radians) {
 	return radians * (180/Math.PI);
+}
+Math.randomBetween = function(min, max) {
+	if (min < 0) {
+		return min + Math.random() * (Math.abs(min)+max);
+	}else {
+		return min + Math.random() * max;
+	}
 }
 
 //change this to reflect the vector cloning convention.
@@ -900,6 +953,7 @@ engine.Input = Class.extend({
 			2: false,
 			3: false,
 			pos: new engine.Vector(),
+			absolutePos: new engine.Vector(),
 			lastMove: (new Date()).getTime(),
 			speed: new engine.Vector(),
 		};
@@ -924,6 +978,14 @@ engine.Input = Class.extend({
 			//finally, update the new position
 			self.mouse.pos.x = x;
 			self.mouse.pos.y = y;
+
+			if (engine.settings.currentGame.scene !== null) {
+				//and update the absolutePos
+				self.mouse.absolutePos.x = self.mouse.pos.x;
+				self.mouse.absolutePos.y = self.mouse.pos.y;
+				self.mouse.absolutePos.add(engine.settings.currentGame.scene.camera.pos);
+				engine.settings.currentGame.console.debug('mouse absolute', self.mouse.absolutePos.toString());
+			}
 		});
 	},
 });
