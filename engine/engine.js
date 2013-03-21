@@ -830,7 +830,7 @@ engine.sound.get = function(name, type) {
 	return instance;
 },
 
-
+engine.images = [];
 
 engine.preload = function(stuff, progressCallback, callback) {
 	if (typeof callback !== 'function') {
@@ -876,7 +876,28 @@ engine.preload = function(stuff, progressCallback, callback) {
 				}, true);//true: loads them from the project URL instead of the core engine
 			}
 		}
-		//images (coming soon)
+
+		//images
+		if (stuff.project.images !== undefined) {
+			loadedStuff[stuff.project.images.toString()] = false;
+			for(var i in stuff.project.images) {
+				engine.images[i] = new Image();
+				engine.images[i].onload = function() {
+					if (progressCallback !== undefined) {
+						progressCallback(i);
+					}
+				}
+				engine.src = stuff.project.images[i];
+			}
+			var interval = setInterval(function() {
+				for(var i in engine.images) {
+					if (engine.images[i].complete !== true) {
+						return false;
+					}
+					loadedStuff[stuff.project.images.toString()] = true;
+				}
+			}, 100);
+		}
 
 		//sounds
 		//make sure to init the sound class
