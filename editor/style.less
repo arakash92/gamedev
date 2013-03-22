@@ -10,6 +10,15 @@ body.dragging, body.dragging * {
 	user-select: none;
 }
 
+.selectable {
+	-webkit-touch-callout: all;
+	-webkit-user-select: all;
+	-khtml-user-select: all;
+	-moz-user-select: all;
+	-ms-user-select: all;
+	user-select: all;
+}
+
 .modal {
 	background-color: #252525;
 	.modal-header {
@@ -115,6 +124,32 @@ a {
 	}
 }
 
+
+
+
+#project-view {
+	height: 100%;
+	overflow-y: scroll;
+	ul.assets {
+		margin: 0;
+		padding: 0;
+		list-style-type: none;
+
+		li {
+			a {
+
+			}
+
+			ul {
+				list-style-type: none;
+			}
+		}
+	}
+}
+
+
+
+
 #wrapper {
 	height: 100%;
 
@@ -130,6 +165,7 @@ a {
 	#mid {
 		width: 100%;
 		z-index: 100;
+
 		#gamepanel {
 			float: left;
 			height: 100%;

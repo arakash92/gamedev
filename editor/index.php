@@ -85,6 +85,12 @@ if (isset($_GET['c'])) {
 			echo json_encode($stuff);
 		}
 
+		public function _getEntities($project) {
+			$stuff = dirToArray('../' .$project .'/entities');
+			unset($stuff['.git']);
+			echo json_encode($stuff);
+		}
+
 	}
 
 	$backend = new backend($command);
@@ -390,30 +396,63 @@ if (isset($_GET['c'])) {
 		/*------------------------------
 		 * Load project files
 		 *------------------------------*/
-
+		editor.displayDir = function(dir) {
+			var i,node,str='';
+			for(i in dir) {
+				node = dir[i];
+				
+				if (typeof node === 'object' || typeof node === 'function') {
+					//directory
+					console.log(i +' is a dir');
+					str += '<li class="folder"><a><i data-node="' + i +'" class="icon-white icon-folder-close"></i> ' + i +'</a><ul style="display: none;">';
+					str += editor.displayDir(node);
+					str += '</ul></li>';
+				}else  {
+					//file
+					console.log(i +' is a file');
+					str +='<li class="file"><a><i data-node="' +node +'" class="icon-white icon-file"></i> ' + node +'</a></li>';
+				}
+			}
+			return str;
+		}
 		editor.loadProjectFiles = function(project) {
 			console.log('Loading project ' + project +'...');
 			$.post(URL +'/?c=loadProjectFiles/' + project, function(dir) {
 				dir = $.parseJSON(dir);
 				console.log(dir);
-				var ul = $("#project-view .assets");
 
-				var i,node;
-				for(i in dir) {
-					node = dir[i];
-
-					if (typeof node === 'object' || node instanceof 'Array') {
-						//directory
-						ul.append('<li class="folder"><i data-node="' +i +'" class="icon-white icon-folder-close"></i> ' + i +'</li>');
-					}else  {
-						//file
-						ul.append('<li class="file"><i data-node="' +i +'" class="icon-white icon-file"></i> ' + i +'</li>');
-					}
-				}
+				$("#project-view ul.assets").html(editor.displayDir(dir));
 			});
 		}
 
+		$(document).on('click', '#project-view ul.assets li a', function() {
+			var self = $(this);
+			/*------------------------------
+			 * Folders
+			 *------------------------------*/
+			if (self.parent().hasClass('folder')) {
+				//toggle files
+				if (self.parent().hasClass('visible')) {
+					//hide
+					self.parent().removeClass('visible').find('ul').slideUp();
+					self.find('.icon-white').addClass('icon-folder-close').removeClass('icon-folder-open');
+				}else {
+					//show
+					self.parent().addClass('visible').find('ul').slideDown();
+					self.find('.icon-white').removeClass('icon-folder-close').addClass('icon-folder-open');
+				}
 
+			}else if (self.parent().hasClass('file')) {
+				/*------------------------------
+				 * File
+				 *------------------------------*/
+				console.log(self.parents('.folder a').text());
+				if (self.parent().text() == 'entities') {
+					var entityName = $(this).text();
+					console.log('selecting ' + entityName);
+				}
+			}
+		});
 
 
 		/*------------------------------

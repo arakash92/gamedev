@@ -5,7 +5,6 @@ engine.registerModule('Scene', '0.1.0')
 				this.layers = [];
 				this.effect = null;
 				this.debug = true;
-				this.editorMode = false;
 				this.gridSize = 48;
 				this.gridAlpha = 0.3;
 				this.gridColor = 'white';
@@ -89,6 +88,9 @@ engine.registerModule('Scene', '0.1.0')
 					}
 				}
 				
+				//draw grid, if in editor
+				if (engine.settings.isEditor === true) this.drawGrid(g);
+
 				//render effects layer
 				if (this.effect !== null) {
 					this.effect.render(g);
