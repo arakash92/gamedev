@@ -1,62 +1,153 @@
-html {
-	width: 100%;
+html, body {
 	height: 100%;
 }
-body {
-	background-image: url('bg.png');
-	background-repeat: repeat;
-	background-size: 10px;
-	width: 100%;
-	height: 100%;
+body.dragging, body.dragging * {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
-#editor {
-	width: 100%;
-	height: 100%;
-	margin: 0;
-	padding: 0;
 
-	a {
-		cursor: pointer;
+.modal {
+	background-color: #252525;
+	.modal-header {
+		border-bottom-color: #444;
 	}
+	.modal-body {
+		border-bottom: none;
+	}
+	.modal-footer {
+		border-top: 1px solid #444;
+		background-color: #333;
+	}
+}
 
-	/* panels, views etc */
-	.panel {
+a {
+	cursor: pointer;
+}
+
+.panel {
+	position: relative;
+	min-width: 30px;
+	min-height: 30px;
+}
+
+.view {
+	min-width: 30px;
+	min-height: 30px;
+	overflow-y: scroll;
+	> .inner {
+		padding: 8px;
+	}
+}
+
+.engine, .engine * {
+	cursor: default;
+}
+
+.resize-handle {
+	position: absolute;
+	z-index: 100;
+
+	> .handle {
+		position: absolute;
+
+		.bar {
+			background: #555;
+		}
+	}
+	&:hover {
+		.bar {
+			background: #33DAFF;
+		}
+	}
+}
+
+.resize-left {
+	.resize-handle-left {
+		position: absolute;
+		width: 8px;
 		height: 100%;
-		background: rgba(255,255,555,0.2);
-		border: 1px solid #666;
 
-		> .inner {
-			padding: 8px;
+		&:hover {
+			cursor: w-resize;
 		}
 
-		.view {
-			//background: rgba(45,45,45,0.6);
+		.handle {
+			height: 100%;
+			width: 100%;
+			left: -4px;
+
+			.bar {
+				position: absolute;
+				height: 100%;
+				width: 1px;
+				left: 4px;
+			}
 		}
 	}
+}
 
+.resize-top {
+	.resize-handle-top {
+		position: absolute;
+		width: 100%;
+		height: 8px;
 
-	#main-menu {
-		-webkit-touch-callout: none;
-		-webkit-user-select: none;
-		-khtml-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
-		user-select: none;
+		&:hover {
+			cursor: n-resize;
+		}
+
+		.handle {
+			height: 100%;
+			width: 100%;
+			top: -4px;
+
+			.bar {
+				position: absolute;
+				width: 100%;
+				height: 1px;
+				top: 4px;
+			}
+		}
+	}
+}
+
+#wrapper {
+	height: 100%;
+
+	#top {
+		height: 26px;
+		width: 100%;
+		z-index: 101;
 
 		.btn-toolbar {
 			margin: 0;
 		}
 	}
-
-	.top-row {
-
+	#mid {
+		width: 100%;
+		z-index: 100;
+		#gamepanel {
+			float: left;
+			height: 100%;
+		}
+		#rightpanel {
+			float: left;
+			height: 100%;
+		}
 	}
+	#bottom {
+		position: absolute;
+		z-index: 102;
+		width: 100%;
+		bottom: 0px;
 
-	.main-row {
-		height: 80%;
-	}
-
-	.bottom-row {
-		height: 20%;
+		.view {
+			height: 100%;
+			overflow: hidden;
+		}
 	}
 }

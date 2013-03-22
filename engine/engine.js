@@ -31,6 +31,128 @@
 
 
 
+
+
+/*! Copyright (c) 2013 Brandon Aaron (http://brandonaaron.net)
+ * Licensed under the MIT License (LICENSE.txt).
+ *
+ * Thanks to: http://adomas.org/javascript-mouse-wheel/ for some pointers.
+ * Thanks to: Mathias Bank(http://www.mathias-bank.de) for a scope bug fix.
+ * Thanks to: Seamus Leahy for adding deltaX and deltaY
+ *
+ * Version: 3.1.3
+ *
+ * Requires: 1.2.2+
+ */
+
+(function (factory) {
+    if ( typeof define === 'function' && define.amd ) {
+        // AMD. Register as an anonymous module.
+        define(['jquery'], factory);
+    } else if (typeof exports === 'object') {
+        // Node/CommonJS style for Browserify
+        module.exports = factory;
+    } else {
+        // Browser globals
+        factory(jQuery);
+    }
+}(function ($) {
+
+    var toFix = ['wheel', 'mousewheel', 'DOMMouseScroll', 'MozMousePixelScroll'];
+    var toBind = 'onwheel' in document || document.documentMode >= 9 ? ['wheel'] : ['mousewheel', 'DomMouseScroll', 'MozMousePixelScroll'];
+    var lowestDelta, lowestDeltaXY;
+
+    if ( $.event.fixHooks ) {
+        for ( var i = toFix.length; i; ) {
+            $.event.fixHooks[ toFix[--i] ] = $.event.mouseHooks;
+        }
+    }
+
+    $.event.special.mousewheel = {
+        setup: function() {
+            if ( this.addEventListener ) {
+                for ( var i = toBind.length; i; ) {
+                    this.addEventListener( toBind[--i], handler, false );
+                }
+            } else {
+                this.onmousewheel = handler;
+            }
+        },
+
+        teardown: function() {
+            if ( this.removeEventListener ) {
+                for ( var i = toBind.length; i; ) {
+                    this.removeEventListener( toBind[--i], handler, false );
+                }
+            } else {
+                this.onmousewheel = null;
+            }
+        }
+    };
+
+    $.fn.extend({
+        mousewheel: function(fn) {
+            return fn ? this.bind("mousewheel", fn) : this.trigger("mousewheel");
+        },
+
+        unmousewheel: function(fn) {
+            return this.unbind("mousewheel", fn);
+        }
+    });
+
+
+    function handler(event) {
+        var orgEvent = event || window.event,
+            args = [].slice.call(arguments, 1),
+            delta = 0,
+            deltaX = 0,
+            deltaY = 0,
+            absDelta = 0,
+            absDeltaXY = 0,
+            fn;
+        event = $.event.fix(orgEvent);
+        event.type = "mousewheel";
+
+        // Old school scrollwheel delta
+        if ( orgEvent.wheelDelta ) { delta = orgEvent.wheelDelta; }
+        if ( orgEvent.detail )     { delta = orgEvent.detail * -1; }
+
+        // New school wheel delta (wheel event)
+        if ( orgEvent.deltaY ) {
+            deltaY = orgEvent.deltaY * -1;
+            delta  = deltaY;
+        }
+        if ( orgEvent.deltaX ) {
+            deltaX = orgEvent.deltaX;
+            delta  = deltaX * -1;
+        }
+
+        // Webkit
+        if ( orgEvent.wheelDeltaY !== undefined ) { deltaY = orgEvent.wheelDeltaY; }
+        if ( orgEvent.wheelDeltaX !== undefined ) { deltaX = orgEvent.wheelDeltaX * -1; }
+
+        // Look for lowest delta to normalize the delta values
+        absDelta = Math.abs(delta);
+        if ( !lowestDelta || absDelta < lowestDelta ) { lowestDelta = absDelta; }
+        absDeltaXY = Math.max(Math.abs(deltaY), Math.abs(deltaX));
+        if ( !lowestDeltaXY || absDeltaXY < lowestDeltaXY ) { lowestDeltaXY = absDeltaXY; }
+
+        // Get a whole value for the deltas
+        fn = delta > 0 ? 'floor' : 'ceil';
+        delta  = Math[fn](delta / lowestDelta);
+        deltaX = Math[fn](deltaX / lowestDeltaXY);
+        deltaY = Math[fn](deltaY / lowestDeltaXY);
+
+        // Add event and delta to the front of the arguments
+        args.unshift(event, delta, deltaX, deltaY);
+
+        return ($.event.dispatch || $.event.handle).apply(this, args);
+    }
+
+}));
+
+
+
 /* Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
@@ -101,6 +223,7 @@
 
 engine = Class.extend({
 	init: function(wrapper, options) {
+		engine.settings.currentGame = this;
 		console.log('Instantiating new engine instance...');
 		var self = this;
 	
@@ -144,6 +267,15 @@ engine = Class.extend({
 		this.rotationCtx.webkitImageSmoothingEnabled = false;
 		this.rotationCtx.font = "14pt monospace";
 
+		//set width and height
+		if (engine.settings.isEditor === true) {
+			this.wrapper.css({
+				width: '100%',
+				height: '100%',
+				position: 'relative',
+			});
+		}
+
 		//gameloop stuff
 		this.fps = 0;
 		this.frame_time = null;
@@ -152,11 +284,6 @@ engine = Class.extend({
 		this.time_now = null;
 		
 		this.scene = null;
-
-		//listen for resize
-		$(window).bind('resize', function() {
-			self.resizeCallback();
-		});
 
 		//options
 		this.options = {
@@ -170,59 +297,75 @@ engine = Class.extend({
 		for (i in options) {
 			this.options[i] = options[i];
 		}
-		
-		//apply width, height etc
-		var height = this.options.height,
-			width = this.options.width;
-		this.canvas.width = width;
-		this.canvas.height = height;
-		this.buffer.width = width;
-		this.buffer.height = height;
-		
-		this.resizeCallback();
-		
+
 		this.input = new engine.Input();
 		this.event = new engine.Event();
 		this.console = new engine.Console();
+
+		self.event.bind('resize', function() {
+			self.resizeCallback();
+		});
+
+		$(window).bind('resize', function() {
+			self.event.trigger('resize');
+		});
+		
+		self.event.trigger('resize');
 
 		console.log('Engine initialized.');
 	},
 
 	resizeCallback: function() {
 		//set canvas dimensions
-		var width = 1200;
-		var height = 700;
+		if (engine.settings.isEditor === true) {
 
-		if ($(window).width() < 1280) {
-			//1280x768
-			width = 960;
-			height = 720;
+			var width = this.wrapper.width();
+			var height = this.wrapper.height();
+
+			this.canvas.width = width;
+			this.canvas.height = height;
+			
+			this.buffer.width = width;
+			this.buffer.height = height;
+
+			this.rotationCanvas.width = width;
+			this.rotationCanvas.height = height;
+
+		}else {
+			var width = 1200;
+			var height = 700;
+
+			if ($(window).width() < 1280) {
+				//1280x768
+				width = 960;
+				height = 720;
+			}
+			if ($(window).width() < 1024) {
+				//800x600
+				width = 720;
+				height = 540;
+			}
+			if ($(window).width() < 800) {
+				width = $(window).width();
+				height = $(window).height();
+			}
+
+			this.canvas.width = width;
+			this.canvas.height = height;
+			this.buffer.width = width;
+			this.buffer.height = height;
+			this.rotationCanvas.width = width;
+			this.rotationCanvas.height = height;
+
+			this.wrapper.css({
+				width: width,
+				height: height,
+				'left': ($(window).width() - width) / 2,
+				'top': ($(window).height() - height) / 2,
+			});
 		}
-		if ($(window).width() < 1024) {
-			//800x600
-			width = 720;
-			height = 540;
-		}
-		if ($(window).width() < 800) {
-			width = $(window).width();
-			height = $(window).height();
-		}
-
-		this.canvas.width = width;
-		this.canvas.height = height;
-		this.buffer.width = width;
-		this.buffer.height = height;
-		this.rotationCanvas.width = width;
-		this.rotationCanvas.height = height;
-
-		this.wrapper.css({
-			width: width,
-			height: height,
-			'left': ($(window).width() - width) / 2,
-			'top': ($(window).height() - height) / 2,
-		});
-
 		engine.settings.currentGame = this;
+
 	},
 
 	run: function() {
@@ -323,10 +466,8 @@ engine.Console = Class.extend({
 	init: function() {
 		console.log('initializing Console');
 		var self = this;
-		engine.settings.currentGame.wrapper.append('<div class="engine-console"><div class="debug"></div><div class="log"></div></div>');
-		this.wrapperDiv = engine.settings.currentGame.wrapper.find('.engine-console');
-		this.debugDiv = this.wrapperDiv.find('.debug');
-		this.logDiv = this.wrapperDiv.find('.log');
+		this.debugDiv = $('.editor-debugger .inner');
+		this.logDiv = $('.editor-log .inner');
 
 		this.debugArray = [];
 		this.logArray = [];
@@ -974,6 +1115,7 @@ engine.Input = Class.extend({
 			2: false,
 			3: false,
 			pos: new engine.Vector(),
+			velocity: new engine.Vector(),
 			absolutePos: new engine.Vector(),
 			lastMove: (new Date()).getTime(),
 			speed: new engine.Vector(),
@@ -992,6 +1134,15 @@ engine.Input = Class.extend({
 			x -= canvasOffset.left;
 			y -= canvasOffset.top;
 			
+			//set mouse velocity
+			self.mouse.velocity.reset();
+
+			self.mouse.velocity.x = self.mouse.pos.x;
+			self.mouse.velocity.y = self.mouse.pos.y;
+
+			self.mouse.velocity.x -= x;
+			self.mouse.velocity.y -= y;
+
 			//get the difference since last move, we'll store this as the mouse speed
 			self.mouse.speed.x = Math.abs(self.mouse.pos.x - x);
 			self.mouse.speed.y = Math.abs(self.mouse.pos.y - y);

@@ -5,6 +5,7 @@ engine.registerModule('Scene', '0.1.0')
 				this.layers = [];
 				this.effect = null;
 				this.debug = true;
+				this.editorMode = false;
 				this.gridSize = 48;
 				this.gridAlpha = 0.3;
 				this.gridColor = 'white';
@@ -92,9 +93,6 @@ engine.registerModule('Scene', '0.1.0')
 				if (this.effect !== null) {
 					this.effect.render(g);
 				}
-
-				//render grid
-				this.drawGrid(g);
 			},
 		});
 
@@ -141,20 +139,21 @@ engine.registerModule('Scene', '0.1.0')
 				this.acceleration = new engine.Vector();
 				this.velocity = new engine.Vector();
 				this.maxSpeed = 3;
-				this.zoomLevel = 1.0;
+				this.zoomLevel = 1;
 			},
-			zoomIn: function(zoom) {
+			zoomIn: function() {
 				this.zoomLevel += 1;
 				engine.settings.currentGame.ctx.scale(1.1, 1.1);
 				engine.settings.currentGame.bufferCtx.scale(1.1, 1.1);
 				engine.settings.currentGame.rotationCtx.scale(1.1, 1.1);
 			},
 			zoomOut: function() {
-				if (this.zoomLevel > 1.0) {
+				if (this.zoomLevel > 1) {
 					this.zoomLevel -= 1;
-					engine.settings.currentGame.ctx.scale(0.9, 0.9);
-					engine.settings.currentGame.bufferCtx.scale(0.9, 0.9);
-					engine.settings.currentGame.rotationCtx.scale(0.9, 0.9);
+					var zoom = 1/(1*1.1);
+					engine.settings.currentGame.ctx.scale(zoom, zoom);
+					engine.settings.currentGame.bufferCtx.scale(zoom, zoom);
+					engine.settings.currentGame.rotationCtx.scale(zoom, zoom);
 				}
 			},
 			getArea: function() {
@@ -171,8 +170,6 @@ engine.registerModule('Scene', '0.1.0')
 
 
 				engine.settings.currentGame.console.debug('Camera Position', this.pos.toString());
-				engine.settings.currentGame.console.debug('Camera acceleration', this.acceleration.toString());
-				engine.settings.currentGame.console.debug('Camera Zoom', this.zoomLevel);
 				this.event.trigger('update_pre');
 				/////////////////////////////////
 

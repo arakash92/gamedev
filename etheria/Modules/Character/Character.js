@@ -2,7 +2,7 @@ engine.registerModule('Character', '0.1.0')
 	//.depends('Entity')
 	.defines(function() {
 
-		engine.Character = engine.Entity.extend({
+		project.Character = engine.Entity.extend({
 			init: function(name, x, y) {
 				this._super(x,y);
 				this.name = name;

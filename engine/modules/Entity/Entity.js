@@ -1,10 +1,11 @@
 engine.registerModule('Entity', '0.1.0')
 	.defines(function() {
 		engine.Entity = Class.extend({
-			init: function(x, y) {
+			init: function(x, y, width, height) {
 				engine.settings.currentGame.console.log('Entity created', true);
 				this.debug = false;
 				this.pos = new engine.Vector();
+				this.size = new engine.Vector(10,10);
 				this.absolutePos = new engine.Vector();
 				this.acceleration = new engine.Vector();
 				this.velocity = new engine.Vector();
@@ -18,10 +19,16 @@ engine.registerModule('Entity', '0.1.0')
 				if (y !== undefined) {
 					this.pos.y = y;
 				}
+				if (width !== undefined) {
+					this.size.x = width;
+				}
+				if (height !== undefined) {
+					this.size.y = height;
+				}
 			},
 
 			applyForce: function(force) {
-
+				
 			},
 			
 			update: function(dt) {
@@ -35,12 +42,14 @@ engine.registerModule('Entity', '0.1.0')
 				this.event.trigger('update_post');
 				this.pos.add(this.velocity);
 			},
+			updateEditor: function(dt) {
+
+			},
 			
 			renderDebug: function(g) {
 				g.fillStyle = 'white';
-				g.textAlign = 'center';
 				g.globalAlpha = 1;
-				//g.fillText('Entity', this.absolutePos.x, this.absolutePos.y);
+				g.fillRect(this.absolutePos.x - (this.size.x/2), this.absolutePos.y - (this.size.y-2), this.size.x, this.size.y);
 			},
 			
 			render: function(g) {
@@ -48,6 +57,9 @@ engine.registerModule('Entity', '0.1.0')
 				if (typeof this.onRender == 'function') {
 					this.onRender(g);
 				}
+			},
+			renderEditor: function(g) {
+
 			},
 		});
 	});
