@@ -1,16 +1,18 @@
 engine.registerModule('Scene', '0.1.0')
 	.defines(function() {
 		engine.Scene = Class.extend({
-			init: function() {
+			init: function(name) {
+				this.name = name;
 				this.layers = [];
 				this.effect = null;
-				this.debug = true;
-				this.gridSize = 48;
+				this.displayGrid = true;
+				this.gridSize = 64;
 				this.gridAlpha = 0.3;
 				this.gridColor = 'white';
 				this.gridWidth = 1;
 				this.event = new engine.Event();
 				this.camera = new engine.Scene.Camera(0, 0, engine.settings.currentGame.canvas.width, engine.settings.currentGame.canvas.height);
+				this.collisionCache = [];
 			},
 			unstage: function() {
 				this.event.trigger('unstage');
@@ -24,6 +26,9 @@ engine.registerModule('Scene', '0.1.0')
 				}
 			},
 			update: function(dt) {
+				//empty the collisionCache
+				this.collisionCache = [];
+
 				this.event.trigger('update', dt);
 
 				//update camera
@@ -33,18 +38,22 @@ engine.registerModule('Scene', '0.1.0')
 				var i,layer;
 				for (i in this.layers) {
 					layer = this.layers[i];
-					for(i in layer) {
-						layer[i].update(dt);
+					if (layer.visible === true) {
+						layer.update(dt);
 					}
 				}
-				
-				//update effects layer
-				if (this.effect !== null) {
-					this.effect.update(dt);
+			},
+			add: function(layer, entity) {
+				if (this.layers[layer] === undefined) {
+					this.layers[layer] = new engine.Scene.Layer(layer);
 				}
+				this.layers[layer].entities.push(entity);
+			},
+			find: function() {
+
 			},
 			drawGrid: function(g, force) {
-				if (this.debug  === true || force === true) {
+				if (this.displayGrid  === true || force === true) {
 
 					var gridOffsetX = Math.abs(this.camera.pos.x) % this.gridSize,
 						gridOffsetY = Math.abs(this.camera.pos.y) % this.gridSize,
@@ -83,8 +92,8 @@ engine.registerModule('Scene', '0.1.0')
 				var i,layer;
 				for (i in this.layers) {
 					layer = this.layers[i];
-					for(i in layer) {
-						layer[i].render(g);
+					if (layer.visible === true) {
+						layer.render(g);
 					}
 				}
 				
@@ -98,37 +107,42 @@ engine.registerModule('Scene', '0.1.0')
 			},
 		});
 
-		engine.Layer = Class.extend({
-			name: 'New Layer',
-			visible: true,
-			active: true,
+		engine.Scene.Layer = Class.extend({
 			init: function(name) {
+				this.visible = true;
+				this.isCollision = false;
+				this.entities = [];
+
 				if (typeof name == 'string') {
 					this.name = name;
+				}else {
+					this.name = 'unnamed layer';
 				}
 			},
 			update: function(dt) {
-				if (this.active) {
+				if (this.visible) {
 					var i,e;
 					for(i in this.entities) {
 						e = this.entities[i];
-						if (e.active) {
-							e.update(dt);
-						}
+						e.update(dt);
 					}
 				}
 			},
 			render: function(g) {
 				if (this.visible) {
-					var i,e;
+					var i,e,eArea,area = engine.settings.currentGame.scene.camera.getArea();
 					for(i in this.entities) {
 						e = this.entities[i];
-						if (e.visible) {
+						eArea = e.getArea();
+						if (eArea.right > area.left &&
+							eArea.left < area.right &&
+							eArea.bottom > area.top &&
+							eArea.top < area.bottom) {
 							e.render(g);
 						}
 					}
 				}
-			}
+			},
 		});
 
 		engine.Scene.Camera = Class.extend({
@@ -142,6 +156,10 @@ engine.registerModule('Scene', '0.1.0')
 				this.velocity = new engine.Vector();
 				this.maxSpeed = 3;
 				this.zoomLevel = 1;
+
+				this.panningEnabled = false;
+				this.panning = false;
+				this.panningStart = new engine.Vector();
 			},
 			zoomIn: function() {
 				this.zoomLevel += 1;
@@ -168,10 +186,33 @@ engine.registerModule('Scene', '0.1.0')
 					centerY: this.pos.y + (this.height/2),
 				};
 			},
+			processPanning: function(dt) {
+				if (engine.settings.currentGame.input.mouse['2'] || engine.settings.currentGame.input.keys['space']) {
+					if (this.panning === true) {
+						//continue drag
+						//has the mouse moved?
+						if (engine.settings.currentGame.input.mouse.pos.x !== this.panningStart.x || engine.settings.currentGame.input.mouse.pos.y !== this.panningStart.y) {
+							this.pos.x = this.panningStart.x - engine.settings.currentGame.input.mouse.pos.x;
+							this.pos.y = this.panningStart.y - engine.settings.currentGame.input.mouse.pos.y;
+						}
+					}else {
+						//start this.panning
+						this.panning = true;
+						this.panningStart.x = this.pos.x + engine.settings.currentGame.input.mouse.pos.x;
+						this.panningStart.y = this.pos.y + engine.settings.currentGame.input.mouse.pos.y;
+					}
+				}else if (this.panning === true) {
+					//this.panning stopped
+					this.panning = false;
+				}
+			},
 			update: function(dt) {
 
+				//panning
+				if (this.panningEnabled === true) {
+					this.processPanning(dt);
+				}
 
-				engine.settings.currentGame.console.debug('Camera Position', this.pos.toString());
 				this.event.trigger('update_pre');
 				/////////////////////////////////
 

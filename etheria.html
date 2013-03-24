@@ -30,15 +30,19 @@
 	<script type="text/javascript" src="engine/engine.js"></script>
 	<script type="text/javascript">
 		engine.setup({
-			'engineURL': 'http://localhost/gamedev/engine/',
-			'projectURL': 'http://localhost/gamedev/etheria/',
+			'engineURL': 'http://192.168.1.137/gamedev/engine/',
+			'projectURL': 'http://192.168.1.137/gamedev/etheria/',
 		});
 	</script>
+
+	<!--
+	loading for debugging
 	<script type="text/javascript" src="engine/modules/Entity/Entity.js"></script>
 	<script type="text/javascript" src="engine/modules/Component/Component.js"></script>
 	<script type="text/javascript" src="engine/modules/ParticleSystem/ParticleSystem.js"></script>
 	<script type="text/javascript" src="engine/modules/Scene/Scene.js"></script>
 	<script type="text/javascript" src="etheria/modules/Player/Player.js"></script>
+	-->
 
 	<!-- engine.less -->
 	<link rel="stylesheet/less" type="text/css" href="engine/engine.less">
@@ -235,6 +239,14 @@
 		</div>
 		
 	</div>
+	<div class="editor-debugger">
+		<div class="inner">
+		</div>
+	</div>
+	<div class="editor-log">
+		<div class="inner">
+		</div>
+	</div>
 
 
 	<script type="text/javascript">
@@ -242,8 +254,8 @@
 	   	 * First, setup engine and project URL's
 	   	 *------------------------------*/
 		engine.setup({
-			'engineURL': 'http://localhost/gamedev/engine/',
-			'projectURL': 'http://localhost/gamedev/etheria/',
+			'engineURL': 'http://192.168.1.137/gamedev/engine/',
+			'projectURL': 'http://192.168.1.137/gamedev/etheria/',
 		});
 		
 
@@ -339,10 +351,10 @@
 		
 		engine.preload({
 			core: {
-				modules: 'Entity,Scene,ParticleSystem',
+				modules: 'Entity,Scene,ParticleSystem,SpriteAnim',
 			},
 			project: {
-
+				spritesheets: 'grasslands.json,player.json',
 			},
 		}, function(asset) {
 			/*------------------------------
@@ -350,8 +362,7 @@
 			 *------------------------------*/
 			loadCount++;
 			loadingText.html(asset +' loaded');
-			bar.css('width', (100/8) * loadCount +'%');
-
+			bar.css('width', (100/6) * loadCount +'%');
 
 
 		}, function() {
@@ -359,25 +370,379 @@
 			 * Fade out the loading overlay
 			 *------------------------------*/
 			$(".preload-overlay").hide('fade', 1000);
-
+			$(".gui-mainmenu").hide('fade', 1500);
 
 			/*------------------------------
 			 * Initialzie the game and load the main menu
 			 *------------------------------*/
-			game = new engine('#game', {fps: 60});
+			game = new engine('#game', {fps: 60, imageSmoothingEnabled: false});
+
+			/*------------------------------
+			 * Testing spritesheet
+			 *------------------------------*/
+
+			//define a tile class
+			engine.Tile = Class.extend({
+				init: function(sprite, x, y, width, height) {
+					this.sprite = sprite;
+					this.visible = true;
+					this.isCollision = false;
+					this.pos = new engine.Vector(x,y);
+					this.absPos = new engine.Vector(0,0);
+					this.width = width;
+					this.height = height;
+				},
+				getArea: function() {
+					var a = {
+						left: this.pos.x,
+						right: this.pos.x + this.width,
+						top: this.pos.y,
+						bottom: this.pos.y + this.height,
+						centerX: this.pos.x + (this.width/2),
+						centerY: this.pos.y + (this.height/2),
+					};
+					for(var i in a) {
+						a[i] = Math.abs(a[i]);
+					}
+					return a;
+				},
+				update: function() {
+					//set absPos
+					this.absPos.x = this.pos.x;
+					this.absPos.y = this.pos.y;
+					this.absPos.sub(engine.settings.currentGame.scene.camera.pos);
+
+					//add to area
+					if (this.isCollision) {
+						engine.settings.currentGame.scene.collisionCache.push(this.getArea());
+					}
+				},
+				render: function(g) {
+					if (this.visible) {
+						this.sprite.render(g, Math.round(this.absPos.x), Math.round(this.absPos.y), this.width, this.height);
+					}
+				},
+			});
+
+			function parseLevel(level, size, layer) {
+				var i,ii,x=0,y=0,tile;
+				for(i in level) {
+
+					for(ii in level[i]) {
+						var key = level[i][ii];
+						switch(key) {
+							case '#':
+								tile = new engine.Tile(engine.spritesheets.grasslands.get('bush.png'), x, y, size, size);
+							break;
+							case '0':
+								tile = new engine.Tile(engine.spritesheets.grasslands.get('grass.png'), x, y, size, size);
+							break;
+							case 'C':
+								tile = new engine.Tile(engine.spritesheets.grasslands.get('grass.png'), x, y, size, size);
+								tile.visible = true;
+								tile.isCollision = true;
+							break;
+						}
+						layer.entities.push(tile);
+						x+= size;
+					}
+					x = 0;
+					y+= size;
+				}
+			}
+
+			var world = new engine.Scene('World');
+
+			//collision layer
+			world.layers.collision = new engine.Scene.Layer('Collision');
+			world.layers.collision.isCollision = true;
+
+			world.layers.one = new engine.Scene.Layer('One');
+			world.layers.two = new engine.Scene.Layer('Two');
+			world.layers.three = new engine.Scene.Layer('Three');
+
+			//world.layers.one.visible = false;
+			//world.layers.two.visible = false;
+
+			//enable panning the camera
+			world.camera.panningEnabled = true;
+
+			parseLevel([
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			'000000000000000000000000000000000000000000',
+			], 64, world.layers.one);
+
+			parseLevel([
+			'##########################################',
+			'#                   #                    #',
+			'#       #######     #                    #',
+			'#       #     #     #                    #',
+			'#       #     #     #                    #',
+			'#  ######     #     ######  ###########  #',
+			'#                                        #',
+			'#          #                             #',
+			'#          #                             #',
+			'#          #####                         #',
+			'#                                        #',
+			'#                                        #',
+			'#                                        #',
+			'#                                        #',
+			'#                                        #',
+			'#                                        #',
+			'#                                        #',
+			'##########################################',
+			], 64, world.layers.two);
+
+			
+			
+			parseLevel([
+			'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+			'C                   C                    C',
+			'C       CCCCCCC     C                    C',
+			'C       C     C     C                    C',
+			'C       C     C     C                    C',
+			'C  CCCCCC     C     CCCCCC  CCCCCCCCCCC  C',
+			'C                                        C',
+			'C          C                             C',
+			'C          C                             C',
+			'C          CCCCC                         C',
+			'C                                        C',
+			'C                                        C',
+			'C                                        C',
+			'C                                        C',
+			'C                                        C',
+			'C                                        C',
+			'C                                        C',
+			'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+			], 64, world.layers.collision);
+			
+
+
+			//create the player
+			var playerSprites = engine.spritesheets.player;
+			var player = new engine.Entity(300, 300, 48, 48);
+
+			//idle up
+			var idle_up = new engine.components.SpriteAnim(-48, -48, 200,
+				[playerSprites.get('player_idle_up.png')],
+				[0],
+				false,
+				96,96
+				);
+			player.attach('idle_up', idle_up);
+
+			//idle left
+			var idle_left = new engine.components.SpriteAnim(-48, -48, 200,
+				[playerSprites.get('player_idle_left.png')],
+				[0],
+				false,
+				96,96
+				);
+			player.attach('idle_left', idle_left);
+
+			//idle down
+			var idle_down = new engine.components.SpriteAnim(-48, -48, 200,
+				[playerSprites.get('player_idle_down.png')],
+				[0],
+				false,
+				96,96
+				);
+			player.attach('idle_down', idle_down);
+
+			//idle right
+			var idle_right = new engine.components.SpriteAnim(-48, -48, 200,
+				[playerSprites.get('player_idle_right.png')],
+				[0],
+				false,
+				96,96
+				);
+			player.attach('idle_right', idle_right);
+
+			//walk up
+			var walk_up = new engine.components.SpriteAnim(-48, -48, 200,
+				[playerSprites.get('player_walk_up_1.png'), playerSprites.get('player_walk_up_2.png')],
+				[0,1],
+				false,
+				96,96
+				);
+			player.attach('walk_up', walk_up);
+
+			//walk left
+			var walk_left = new engine.components.SpriteAnim(-48, -48, 200,
+				[playerSprites.get('player_walk_left_1.png'), playerSprites.get('player_walk_left_2.png')],
+				[0,1],
+				false,
+				96,96
+				);
+			player.attach('walk_left', walk_left);
+
+			//walk down
+			var walk_down = new engine.components.SpriteAnim(-48, -48, 200,
+				[playerSprites.get('player_walk_down_1.png'), playerSprites.get('player_walk_down_2.png')],
+				[0,1],
+				false,
+				96,96
+				);
+			player.attach('walk_down', walk_down);
+
+			//walk right
+			var walk_right = new engine.components.SpriteAnim(-48, -48, 200,
+				[playerSprites.get('player_walk_right_1.png'), playerSprites.get('player_walk_right_2.png')],
+				[0,1],
+				false,
+				96,96
+				);
+			player.attach('walk_right', walk_right);
+
+			player.direction = "right";
+			player.debug = false;
+			player.size.x = 24;
+			player.size.y = 24;
+			player.offset.y = -10;
+			//Player update
+			player.event.bind('update_pre', function(dt) {
+
+				//reset stuff
+				player.moving = false;
+				player.canMoveUp = true;
+				player.canMoveRight = true;
+				player.canMoveLeft = true;
+				player.canMoveDown = true;
+
+				//check collision
+				var i, box, area;
+				for(i in world.collisionCache) {
+					box = world.collisionCache[i];
+					
+					var within = {y:false,x:false};
+					area = player.getArea();
+					
+
+					//check Y
+					if ((area.top >= box.top && area.top <= box.bottom) || (area.bottom >= box.top && area.top <= box.top)) {
+						game.console.log('WITHIN Y', true);
+						within.y = true;
+					}
+					//check X
+					if ((area.left >= box.left && area.left <= box.right) || (area.right >= box.left && area.right <= box.right)) {
+						game.console.log('WITHIN X', true);
+						within.x = true;
+					}
+
+					if (within.x === true && within.y === true) {
+						game.console.log('COLLISION', true);
+
+						
+						var top = Math.abs(box.top - area.bottom);
+
+						var left = Math.abs(box.left - area.right);
+
+						var right = Math.abs(box.right - area.left);
+
+						var bottom = Math.abs(box.bottom - area.top);
+
+						game.console.debug('top', top);
+						game.console.debug('left', left);
+						game.console.debug('right', right);
+						game.console.debug('bottom', bottom);
+
+						if (top < left && top < right && top < bottom) {
+							//top
+							player.canMoveDown = false;
+							player.pos.y -= top;
+						}else if (left < top && left < right && left < bottom) {
+							//left
+							player.canMoveRight = false;
+							player.pos.x -= left;
+						}else if (right < left && right < top && right < bottom) {
+							//right
+							player.canMoveLeft = false;
+							player.pos.x += right;
+						}else if (bottom < left && bottom < right && bottom < top) {
+							//bottom
+							player.canMoveUp = false;
+							player.pos.y += bottom;
+						}
+					}
+				}
+
+				//update camera
+				world.camera.pos.x = player.pos.x - (game.canvas.width/2);
+				world.camera.pos.y = player.pos.y - (game.canvas.height/2);
+
+				//disable all sprite components
+				player.components['idle_up'].alive = false;
+				player.components['idle_right'].alive = false;
+				player.components['idle_down'].alive = false;
+				player.components['idle_left'].alive = false;
+				player.components['walk_up'].alive = false;
+				player.components['walk_right'].alive = false;
+				player.components['walk_down'].alive = false;
+				player.components['walk_left'].alive = false;
+
+				
+				var speed = (game.input.keys['shift']) ? 6 : 3;
+
+				if (game.input.keys['w'] && player.canMoveUp) {
+					player.moving = true;
+					player.direction = 'up';
+					player.pos.y -= speed * dt;
+				}
+				if (game.input.keys['a'] && player.canMoveLeft) {
+					player.moving = true;
+					player.direction = 'left';
+					player.pos.x -= speed * dt;
+				}
+				if (game.input.keys['s'] && player.canMoveDown) {
+					player.moving = true;
+					player.direction = 'down';
+					player.pos.y += speed * dt;
+				}
+				if (game.input.keys['d'] && player.canMoveRight) {
+					player.moving = true;
+					player.direction = 'right';
+					player.pos.x += speed * dt;
+				}
+
+				if (player.moving === true) {
+					player.components['walk_' + player.direction].alive = true;
+				}else {
+					player.components['idle_' + player.direction].alive = true;
+				}
+
+			});
+
+			//add player
+			
+			world.layers.three.entities.push(player);
+
+			//stage
+			game.stage(world);
 
 
 			/*------------------------------
 			 * Initialize socket connection
 			 *------------------------------*/
-			game.socket = io.connect('http://192.168.1.137:8080');
+			//game.socket = io.connect('http://127.0.0.1:8080');
 
 
 
-			/*------------------------------
-			 * Main Menu
-			 *------------------------------*/
-			var mainMenu = new engine.mainMenu(game);
 			
 			game.run();
 		});

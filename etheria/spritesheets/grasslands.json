@@ -1,0 +1,28 @@
+{"frames": {
+
+"bush.png":
+{
+	"frame": {"x":0,"y":0,"w":16,"h":16},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":16,"h":16},
+	"sourceSize": {"w":16,"h":16}
+},
+"grass.png":
+{
+	"frame": {"x":0,"y":16,"w":16,"h":16},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":16,"h":16},
+	"sourceSize": {"w":16,"h":16}
+}},
+"meta": {
+	"app": "http://www.texturepacker.com",
+	"version": "1.0",
+	"image": "grasslands.png",
+	"format": "RGBA8888",
+	"size": {"w":16,"h":32},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:fcebbb64511782a039b53712e259bdb2$"
+}
+}

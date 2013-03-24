@@ -1,0 +1,13 @@
+{
+	"name": "Login",
+	"layers": {
+		"0": {
+			"name": "Background",
+			"entities": {}
+		},
+		"1": {
+			"name": "Entities",
+			"entities": {}
+		}
+	}
+}

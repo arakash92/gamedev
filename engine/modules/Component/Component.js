@@ -1,5 +1,5 @@
 engine.registerModule('Component', '0.1.0')
-	//.depends('Entity')
+	.depends('Entity')
 	.defines(function() {
 		
 		if (engine.components === undefined) {
@@ -48,26 +48,25 @@ engine.registerModule('Component', '0.1.0')
 				var i,comp;
 				for(i in this.components) {
 					comp = this.components[i];
-					if (comp.alive) {
+					if (comp.alive === true) {
 						comp.update(dt);
 					}
 				}
 			},
 			render: function(g) {
-				this._super(g);
 				var i,comp;
 				for(i in this.components) {
 					comp = this.components[i];
-					if (comp.visible) {
+					if (comp.alive === true) {
 						comp.render(g);
 					}
 				}
+				this._super(g);
 			},
 		});
 		
 		engine.Component = Class.extend({
-			init: function(name, x, y) {
-				this.name = name;
+			init: function(x, y) {
 				this.debug = true;
 				this.entity = null;
 				this.alive = true;//whether it will be updated or not

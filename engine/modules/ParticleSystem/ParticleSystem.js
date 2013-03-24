@@ -1,5 +1,5 @@
 engine.registerModule('ParticleSystem', '0.1.0')
-	//.depends('Component')
+	.depends('Component')
 	.defines(function() {
 		
 		/*------------------------------
@@ -73,8 +73,8 @@ engine.registerModule('ParticleSystem', '0.1.0')
 			/*------------------------------
 			 * Constructor
 			 *------------------------------*/
-			init: function(name, x, y, options) {
-				this._super(name, x, y);
+			init: function(x, y, options) {
+				this._super(x, y);
 				
 				this.particles = [];
 				this.particlesAlive = 0;

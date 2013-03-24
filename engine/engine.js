@@ -250,22 +250,6 @@ engine = Class.extend({
 		this.$buffer = this.wrapper.find('.engine-buffer');
 		this.buffer = this.$buffer[0];
 		this.bufferCtx = this.buffer.getContext('2d');
-		
-		//disable image smoothing by default
-		this.ctx.imageSmoothingEnabled = false;
-		this.ctx.mozImageSmoothingEnabled = false;
-		this.ctx.webkitImageSmoothingEnabled = false;
-		this.ctx.font = "14pt monospace";
-
-		this.bufferCtx.imageSmoothingEnabled = false;
-		this.bufferCtx.mozImageSmoothingEnabled = false;
-		this.bufferCtx.webkitImageSmoothingEnabled = false;
-		this.bufferCtx.font = "14pt monospace";
-
-		this.rotationCtx.imageSmoothingEnabled = false;
-		this.rotationCtx.mozImageSmoothingEnabled = false;
-		this.rotationCtx.webkitImageSmoothingEnabled = false;
-		this.rotationCtx.font = "14pt monospace";
 
 		//set width and height
 		if (engine.settings.isEditor === true) {
@@ -290,6 +274,7 @@ engine = Class.extend({
 			fps: 60,
 			width: 640,
 			height: 320,
+			imageSmoothingEnabled: false,
 		};
 
 		//set options
@@ -366,6 +351,21 @@ engine = Class.extend({
 		}
 		engine.settings.currentGame = this;
 
+		//disable image smoothing
+		if (this.options.imageSmoothingEnabled == false) {
+			this.ctx.imageSmoothingEnabled = false;
+			this.ctx.mozImageSmoothingEnabled = false;
+			this.ctx.webkitImageSmoothingEnabled = false;
+
+			this.bufferCtx.imageSmoothingEnabled = false;
+			this.bufferCtx.mozImageSmoothingEnabled = false;
+			this.bufferCtx.webkitImageSmoothingEnabled = false;
+
+			this.rotationCtx.imageSmoothingEnabled = false;
+			this.rotationCtx.mozImageSmoothingEnabled = false;
+			this.rotationCtx.webkitImageSmoothingEnabled = false;
+		}
+
 	},
 
 	run: function() {
@@ -373,7 +373,6 @@ engine = Class.extend({
 		this.time_last = (new Date()).getTime();
 		this.time_now = (new Date()).getTime();
 		this.frame_time = 1000/this.options.fps;
-		
 		this.gameLoop();
 	},
 
@@ -422,17 +421,18 @@ engine = Class.extend({
 		this.event.trigger('render_pre');
 
 		//clear buffer & rotation
-		this.bufferCtx.clearRect(0,0, this.buffer.width, this.buffer.height);
+		//this.bufferCtx.clearRect(0,0, this.buffer.width, this.buffer.height);
+		this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
 		this.rotationCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		
 		//render
 		if (this.scene !== null) {
-			this.scene.render(this.bufferCtx);
+			this.scene.render(this.ctx);
 		}
 		
 		//transfer to displayed canvas
-		this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
-		this.ctx.drawImage(this.buffer, 0, 0);
+		
+		//this.ctx.drawImage(this.buffer, 0, 0);
 
 		this.event.trigger('render_post');
 	},
@@ -543,11 +543,28 @@ engine.setup = function(settings) {
 
 
 
+/*------------------------------
+ * Array of predefined entity classes
+ *------------------------------*/
+engine.entities = [];
+
 
 /*------------------------------
- *   Array of loaded modules
+ * Array of loaded modules
  *-----------------------------*/
 engine.modules = [];
+
+
+/*------------------------------
+ * Array of loaded imges
+ *------------------------------*/
+engine.images = [];
+
+
+/*------------------------------
+ * Array of loaded spritesheets
+ *------------------------------*/
+
 
 
 
@@ -636,12 +653,10 @@ engine.loadModule = function(name, callback, fromProject) {
 
 engine.require = function(modules, progress, callback, fromProject) {
 	if (callback === undefined) {
-		callback = progress;
-		fromProject = undefined;
-		progress = undefined;
+		var callback = progress;
+		var fromProject = undefined;
+		var progress = undefined;
 	}
-	console.log('require callback is:');
-	console.log(callback);
 	var path;
 	if (fromProject === true) {
 		if (engine.settings.projectURL === undefined) {
@@ -827,7 +842,7 @@ engine.Vector = Class.extend({
 });
 
 
-//move this to a new utility.js or the top of he file
+//move this to a new utility.js or the top of the file
 Math.degToRad = function(degrees) {
 	return degrees * (Math.PI/180);
 }
@@ -971,7 +986,7 @@ engine.sound.get = function(name, type) {
 	return instance;
 },
 
-engine.images = [];
+
 
 engine.preload = function(stuff, progressCallback, callback) {
 	if (typeof callback !== 'function') {
@@ -1030,14 +1045,75 @@ engine.preload = function(stuff, progressCallback, callback) {
 				}
 				engine.src = stuff.project.images[i];
 			}
-			var interval = setInterval(function() {
+			var imagesInterval = setInterval(function() {
 				for(var i in engine.images) {
 					if (engine.images[i].complete !== true) {
 						return false;
 					}
-					loadedStuff[stuff.project.images.toString()] = true;
+				}
+				loadedStuff[stuff.project.images.toString()] = true;
+				clearInterval(imagesInterval);
+			}, 100);
+		}
+
+		//spritesheets
+		if (stuff.project.spritesheets !== undefined) {
+			console.log('loading spritesheets...');
+			loadedStuff[stuff.project.spritesheets] = false;
+
+			//Did we require the Spritesheet module from core?
+			var canContinue = false;
+
+			//check if we are loading it
+			var split = stuff.core.modules.split(',');
+			var spritesheetModule = false;
+			for(var i in split) {
+				if (split[i] === 'Spritesheet') {
+					spritesheetModule = true;
+				}
+			}
+
+
+			//is the Spritesheet module already being loaded?
+			if (spritesheetModule === true) {
+				//has it already loaded?
+				if (engine.Spritesheet !== undefined) {
+					console.log('Spritesheet module is already loaded.');
+					canContinue = true;
+				}else {
+					//wait for it to be loaded
+					var spriteSheetModuleInterval = setInterval(function() {
+						if (engine.Spritesheet !== undefined) {
+							//continue
+							canContinue = true;
+							console.log('Spritesheet loaded.');
+							clearInterval(spriteSheetModuleInterval);
+						}
+					});
+				}
+			}else {
+				//we need to load it
+				engine.loadModule('Spritesheet', function() {
+					console.log('Spritesheet loaded.');
+					canContinue = true;
+				});
+			}
+
+			//set an interval, wait for canContinue to be true
+			var spritesheetInterval = setInterval(function() {
+				if (canContinue === true) {
+					clearInterval(spritesheetInterval);
+					//the Spritesheet module has now loaded.
+					
+					//load the spritesheets
+					engine.Spritesheet.require(stuff.project.spritesheets, progressCallback, function() {
+						loadedStuff[stuff.project.spritesheets] = true;
+						console.log('All spritesheets loaded.');
+					});
+					
 				}
 			}, 100);
+
 		}
 
 		//sounds

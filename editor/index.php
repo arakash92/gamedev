@@ -113,7 +113,6 @@ if (isset($_GET['c'])) {
 	<!-- jquery UI css -->
 	<link rel="stylesheet" type="text/css" hreF="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css">
 	
-
 	<!--bootsrap js-->
 	<script src="../engine/lib/bootstrap/js/bootstrap.min.js"></script>
 
@@ -143,8 +142,7 @@ if (isset($_GET['c'])) {
 	<div id="wrapper">
 		<div id="top">
 			<div class="btn-toolbar">
-
-				<div class="btn-group">
+				<div class="btn-group menu-file">
 					<a class="btn btn-small dropdown-toggle" data-toggle="dropdown">File <span class="caret"></span></a>
 					<ul class="dropdown-menu">
 						<li><a onClick="engine.editor.newProject();">New project</a></li>
@@ -154,16 +152,19 @@ if (isset($_GET['c'])) {
 					</ul>
 				</div>
 
-				<div class="btn-group">
-					<a class="btn btn-small dropdown-toggle" data-toggle="dropdown">Edit <span class="caret"></span></a>
+				<div class="btn-group menu-view">
+					<a class="btn btn-small dropdown-toggle" data-toggle="dropdown">View <span class="caret"></span></a>
 					<ul class="dropdown-menu">
-						<li><a onClick="engine.editor.newProject();">New project</a></li>
-						<li><a>Open project</a></li>
-						<li class="divider"></li>
-						<li><a>Save project</a></li>
+						<li><a class="toggle-grid" onClick="editor.toggleGrid()"><i class="icon icon-ok"></i> Grid</a></li>
 					</ul>
 				</div>
 
+				<div class="btn-group menu-new">
+					<a class="btn btn-small dropdown-toggle" data-toggle="dropdown">New <span class="caret"></span></a>
+					<ul class="dropdown-menu">
+						<li><a class="new-scene" onClick="editor.newScene()"><i class="icon icon-film"></i> Scene</a></li>
+					</ul>
+				</div>
 			</div>
 		</div>
 
@@ -176,11 +177,8 @@ if (isset($_GET['c'])) {
 				<div class="inner">
 					<div id="layers-view" class="view">
 						<h4>Layers</h4>
-						<ul class="nav nav-pills nav-stacked">
-							<li><a>Collision</a></li>
-							<li class="active"><span>y</span><a>Foreground</a></li>
-							<li><a>Entities</a></li>
-							<li><a>Background</a></li>
+						<ul class="layers">
+							
 						</ul>
 					</div>
 					<div id="inspector" class="view">
@@ -208,7 +206,7 @@ if (isset($_GET['c'])) {
 				</div>
 			</div>
 			<div id="project-view" class="pull-left panel view resize-left">
-				<h4>Assets</h4>
+				<h4 class="project-name">No project</h4>
 				<ul class="assets">
 					
 				</ul>
@@ -223,7 +221,7 @@ if (isset($_GET['c'])) {
 	</div>
 
 
-	<!-- Modal -->
+	<!-- Open Project Modal -->
 	<div id="open-project-modal" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 	  <div class="modal-header">
 	    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
@@ -239,9 +237,53 @@ if (isset($_GET['c'])) {
 	</div>
 
 
+	<!-- New Scene Modal -->
+	<div id="new-scene-modal" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	  <div class="modal-header">
+	    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+	    <h3 id="myModalLabel">New Scene</h3>
+	  </div>
+	  <div class="modal-body">
+	   	<input type="text" class="scene-name" placeholder="Scene name" class="input-large">
+	  </div>
+	  <div class="modal-footer">
+	    <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+	    <button data-dismiss="modal" class="btn btn-primary">Create</button>
+	  </div>
+	</div>
+
 
 	<script type="text/javascript">
+
+
+		/*------------------------------
+		 * Base URL
+		 *------------------------------*/
 		var URL = '<?=get_base_url()?>';
+		URL = URL.replace('http://', '');
+		URL = URL.split('/');
+		URL[URL.length-1] = '';
+		URL = 'http://' + URL.join('/');
+		
+
+
+		/*------------------------------
+		 * Editor object
+		 * This holds data about our current project
+		 *------------------------------*/
+		var editor = {
+			view: {
+				grid: true,
+			},
+		};
+
+
+		/*------------------------------
+		 * Game variable
+		 *------------------------------*/
+		var game;
+
+
 
 		$(".view").wrapInner('<div class="inner"/>');
 
@@ -361,14 +403,15 @@ if (isset($_GET['c'])) {
 		});
 		
 		
-		var editor = {};
+
 		
 
+
 		/*------------------------------
-		 * Open project
+		 * Show a list of projects
 		 *------------------------------*/
 		editor.openProject = function() {
-			$.post(URL +'/?c=getDirectory', function(data) {
+			$.post(URL +'/editor/?c=getDirectory', function(data) {
 				data = $.parseJSON(data);
 
 				var i,str = '';
@@ -386,15 +429,20 @@ if (isset($_GET['c'])) {
 				$("#open-project-modal").modal('show');
 			});
 		}
+
+		/*------------------------------
+		 * Open a project
+		 *------------------------------*/
 		$("#open-project-modal .modal-footer .btn-primary").click(function() {
 			var selected = $("#open-project-modal").find('.project-list input:checked').val();
 			editor.loadProjectFiles(selected);
+			$("#project-view .project-name").html(selected);
 		});
 		
 
 
 		/*------------------------------
-		 * Load project files
+		 * Render project files in project-view
 		 *------------------------------*/
 		editor.displayDir = function(dir) {
 			var i,node,str='';
@@ -403,28 +451,104 @@ if (isset($_GET['c'])) {
 				
 				if (typeof node === 'object' || typeof node === 'function') {
 					//directory
-					console.log(i +' is a dir');
-					str += '<li class="folder"><a><i data-node="' + i +'" class="icon-white icon-folder-close"></i> ' + i +'</a><ul style="display: none;">';
+					str += '<li data-node="' + i +'" class="folder"><a><i class="icon-white icon-folder-close"></i> ' + i +'</a><ul style="display: none;">';
 					str += editor.displayDir(node);
 					str += '</ul></li>';
 				}else  {
 					//file
-					console.log(i +' is a file');
 					str +='<li class="file"><a><i data-node="' +node +'" class="icon-white icon-file"></i> ' + node +'</a></li>';
 				}
 			}
 			return str;
 		}
+
+
+
+
+		/*------------------------------
+		 * Loads project files from a directory
+		 *------------------------------*/
 		editor.loadProjectFiles = function(project) {
 			console.log('Loading project ' + project +'...');
-			$.post(URL +'/?c=loadProjectFiles/' + project, function(dir) {
-				dir = $.parseJSON(dir);
-				console.log(dir);
 
+			editor.project = project;
+
+			$.post(URL +'/editor/?c=loadProjectFiles/' + project, function(dir) {
+				dir = $.parseJSON(dir);
+				
+				editor.directory = dir;
+
+				//render the directory in the assets view
 				$("#project-view ul.assets").html(editor.displayDir(dir));
 			});
 		}
 
+
+
+		/*------------------------------
+		 * View -> Toggle Grid
+		 *------------------------------*/
+		editor.toggleGrid = function() {
+			if (editor.view.grid === true) {
+				editor.view.grid = false;
+				$(".menu-view .toggle-grid .icon").removeClass('icon-ok');
+			}else {
+				editor.view.grid = true;
+				$(".menu-view .toggle-grid .icon").addClass('icon-ok');
+			}
+			//set in active scene
+			if (game !== undefined) {
+				if (game.scene !== null) {
+					game.scene.displayGrid = editor.view.grid;
+				}
+			}
+		};
+
+
+
+		/*------------------------------
+		 * New -> Scene
+		 *------------------------------*/
+		editor.newScene = function() {
+			//check that we have an open project
+			if (editor.project === undefined) {
+				alert('Please open or create a project before adding scenes!');
+				return false;
+			}
+			
+			//open the new scene modal
+			$("#new-scene-modal").modal('show');
+		};
+
+
+
+		/*------------------------------
+		 * Load Scene
+		 *------------------------------*/
+		editor.loadScene = function(scene) {
+			if (editor.project === undefined) {
+				alert('Cannot open scene, not in a proejct.');
+				return false;
+			}
+			console.log('Loading scene ' + scene +'...');
+			//do an ajax call to fetch the scene JSON
+			game.scene = null;
+			$.post(URL +'/' + editor.project +'/scenes/' + scene, function(data) {
+				console.log(data);
+
+				var scene = new engine.Scene(data.name);
+
+				game.stage(scene);
+			});
+		}
+
+
+
+		/*------------------------------
+		 * Setup directory browsing events
+		 * Including opening of scenes etc
+		 *------------------------------*/
+		 //open & close folders
 		$(document).on('click', '#project-view ul.assets li a', function() {
 			var self = $(this);
 			/*------------------------------
@@ -434,12 +558,12 @@ if (isset($_GET['c'])) {
 				//toggle files
 				if (self.parent().hasClass('visible')) {
 					//hide
-					self.parent().removeClass('visible').find('ul').slideUp();
-					self.find('.icon-white').addClass('icon-folder-close').removeClass('icon-folder-open');
+					self.parent().removeClass('visible').children('ul').slideUp();
+					self.children('.icon-white').addClass('icon-folder-close').removeClass('icon-folder-open');
 				}else {
 					//show
-					self.parent().addClass('visible').find('ul').slideDown();
-					self.find('.icon-white').removeClass('icon-folder-close').addClass('icon-folder-open');
+					self.parent().addClass('visible').children('ul').slideDown();
+					self.children('.icon-white').removeClass('icon-folder-close').addClass('icon-folder-open');
 				}
 
 			}else if (self.parent().hasClass('file')) {
@@ -454,6 +578,13 @@ if (isset($_GET['c'])) {
 			}
 		});
 
+		//Open scenes
+		$(document).on('click', '#project-view ul.assets [data-node="scenes"] ul li a', 'click', function() {
+			var scene = $.trim($(this).text());
+			editor.loadScene(scene);
+		});
+
+
 
 		/*------------------------------
 		 * Initial Engine setup
@@ -464,8 +595,7 @@ if (isset($_GET['c'])) {
 			isEditor: true,
 		});
 
-		//define game variable
-		var game;
+
 
 		/*------------------------------
 		 * Preload stuff
@@ -481,69 +611,47 @@ if (isset($_GET['c'])) {
 			 *------------------------------*/
 			game = new engine('#game');
 
-			/*------------------------------
-			 * Create scene, add some entities etc
-			 *------------------------------*/
-			var testScene = new engine.Scene('Test Scene');
-			
-			//create some entities
-			var player = new engine.Entity(game.canvas.width/2, game.canvas.height/2);
-			player.debug = true;
-
-			testScene.debug = true;
-			testScene.editorMode = true;
-
-			testScene.layers = [[player]];
-
 
 			/*------------------------------
 			 * Camera zooming
 			 *------------------------------*/
-			$(engine.settings.currentGame.wrapper).bind('mousewheel', function(e, d, x, y) {
-				if (y == 1) {
-					testScene.camera.zoomIn();
-				}else if (y == -1) {
-					testScene.camera.zoomOut();
+			$(game.wrapper).bind('mousewheel', function(e, d, x, y) {
+				if (game.scene !== null) {
+					if (y == 1) {
+						game.scene.camera.zoomIn();
+					}else if (y == -1) {
+						game.scene.camera.zoomOut();
+					}
 				}
 			});
+
 
 			/*------------------------------
 			 * Camera dragging
 			 *------------------------------*/
 			var dragStart = new engine.Vector();
 			var dragging = false;
-			testScene.event.bind('update', function() {
-				//camera dragging
+			game.event.bind('update_pre', function() {
 				if (game.input.mouse['2'] || game.input.keys['space']) {
 					if (dragging === true) {
 						//continue drag
-						game.console.log('dragging...');
 
 						//has the mouse moved?
 						if (game.input.mouse.pos.x !== dragStart.x || game.input.mouse.pos.y !== dragStart.y) {
-							testScene.camera.pos.x = dragStart.x - game.input.mouse.pos.x;
-							testScene.camera.pos.y = dragStart.y - game.input.mouse.pos.y;
+							game.scene.camera.pos.x = dragStart.x - game.input.mouse.pos.x;
+							game.scene.camera.pos.y = dragStart.y - game.input.mouse.pos.y;
 						}
-
 					}else {
 						//start dragging
-						game.console.log('Drag start', true);
-						
 						dragging = true;
-						dragStart.x = testScene.camera.pos.x + game.input.mouse.pos.x;
-						dragStart.y = testScene.camera.pos.y + game.input.mouse.pos.y;
+						dragStart.x = game.scene.camera.pos.x + game.input.mouse.pos.x;
+						dragStart.y = game.scene.camera.pos.y + game.input.mouse.pos.y;
 					}
 				}else if (dragging === true) {
-					game.console.log('Drag stopped', true);
+					//dragging stopped
 					dragging = false;
 				}
 			});
-
-			/*------------------------------
-			 * Stage!
-			 *------------------------------*/
-			game.stage(testScene);
-
 
 
 			/*------------------------------

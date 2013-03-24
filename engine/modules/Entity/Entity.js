@@ -3,14 +3,19 @@ engine.registerModule('Entity', '0.1.0')
 		engine.Entity = Class.extend({
 			init: function(x, y, width, height) {
 				engine.settings.currentGame.console.log('Entity created', true);
+
+				//active & visible
+				this.active = true;
+				this.visible = true;
+
 				this.debug = false;
 				this.pos = new engine.Vector();
 				this.size = new engine.Vector(10,10);
+				this.offset = new engine.Vector();
 				this.absolutePos = new engine.Vector();
 				this.acceleration = new engine.Vector();
 				this.velocity = new engine.Vector();
 
-				this.offset = new engine.Vector();
 				this.event = new engine.Event();
 
 				if (x !== undefined) {
@@ -26,14 +31,27 @@ engine.registerModule('Entity', '0.1.0')
 					this.size.y = height;
 				}
 			},
-
+			getArea: function() {
+				var left = Math.abs(this.pos.x - (this.size.x/2)) + this.offset.x;
+				var right = Math.abs(left + this.size.x) + this.offset.x;
+				var top = Math.abs(this.pos.y - this.size.y) + this.offset.y;
+				var bottom = Math.abs(top + this.size.y) + this.offset.y;
+				return {
+					left: left,
+					right: right,
+					top: top,
+					bottom: bottom,
+					centerX: Math.abs(this.pos.x),
+					centerY: Math.abs(this.pos.y),
+				}
+			},
 			applyForce: function(force) {
 				
 			},
 			
 			update: function(dt) {
 				this.velocity.reset();
-				this.event.trigger('update_pre');
+				this.event.trigger('update_pre', dt);
 
 				this.absolutePos.x = this.pos.x;
 				this.absolutePos.y = this.pos.y;
@@ -43,20 +61,19 @@ engine.registerModule('Entity', '0.1.0')
 				this.pos.add(this.velocity);
 			},
 			updateEditor: function(dt) {
-
+				
 			},
 			
-			renderDebug: function(g) {
-				g.fillStyle = 'white';
-				g.globalAlpha = 1;
-				g.fillRect(this.absolutePos.x - (this.size.x/2), this.absolutePos.y - (this.size.y-2), this.size.x, this.size.y);
+			renderDebug: function(g, force) {
+				if (this.debug === true || force === true) {
+					g.fillStyle = 'white';
+					g.globalAlpha = 1;
+					g.fillRect(this.absolutePos.x - (this.size.x/2), this.absolutePos.y - (this.size.y-2), this.size.x, this.size.y);
+				}
 			},
 			
 			render: function(g) {
 				this.renderDebug(g);
-				if (typeof this.onRender == 'function') {
-					this.onRender(g);
-				}
 			},
 			renderEditor: function(g) {
 
