@@ -29,7 +29,7 @@ engine.registerModule('Scene', '0.1.0')
 				//empty the collisionCache
 				this.collisionCache = [];
 
-				this.event.trigger('update', dt);
+				this.event.trigger('update_pre', dt);
 
 				//update camera
 				this.camera.update(dt);
@@ -88,6 +88,8 @@ engine.registerModule('Scene', '0.1.0')
 				}
 			},
 			render: function(g) {
+				this.event.trigger('render_pre', g)
+
 				//update layers
 				var i,layer;
 				for (i in this.layers) {
@@ -98,12 +100,16 @@ engine.registerModule('Scene', '0.1.0')
 				}
 				
 				//draw grid, if in editor
-				if (engine.settings.isEditor === true) this.drawGrid(g);
+				if (engine.settings.isEditor === true) {
+					this.drawGrid(g);
+				}
 
 				//render effects layer
 				if (this.effect !== null) {
 					this.effect.render(g);
 				}
+
+				this.event.trigger('render_post', g);
 			},
 		});
 

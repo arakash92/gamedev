@@ -398,7 +398,7 @@ engine = Class.extend({
 			
 			//update
 			self.update();
-			
+
 			//render
 			self.render();
 		}, self.frame_time);
@@ -1065,11 +1065,15 @@ engine.preload = function(stuff, progressCallback, callback) {
 			var canContinue = false;
 
 			//check if we are loading it
-			var split = stuff.core.modules.split(',');
 			var spritesheetModule = false;
-			for(var i in split) {
-				if (split[i] === 'Spritesheet') {
-					spritesheetModule = true;
+			if (stuff.core !== undefined) {
+				if (stuff.core.modules !== undefined) {
+					var split = stuff.core.modules.split(',');
+					for(var i in split) {
+						if (split[i] === 'Spritesheet') {
+							spritesheetModule = true;
+						}
+					}
 				}
 			}
 

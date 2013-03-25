@@ -88,7 +88,9 @@ engine.registerModule('Spritesheet', '0.1.0')
 			var i,sheet;
 			for(i in spritesheets) {
 				sheet = new engine.Spritesheet(spritesheets[i], function() {
-					progress(spritesheets[i].replace('.json', ''));
+					if (typeof progress === 'function') {
+						progress(spritesheets[i].replace('.json', ''));
+					}
 					loadedSheets[spritesheets[i].replace('.json', '')] = true;
 				});
 				engine.spritesheets[spritesheets[i].replace('.json', '')] = sheet;

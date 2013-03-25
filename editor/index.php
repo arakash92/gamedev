@@ -128,6 +128,8 @@ if (isset($_GET['c'])) {
 	<!--engine JS-->
 	<script type="text/javascript" src="../engine/engine.js"></script>
 
+	<script type="text/javascript" src="../engine/modules/Spritesheet/Spritesheet.js"></script>
+
 	<!--engine LESS-->
 	<link rel="stylesheet/less" type="text/css" href="../engine/engine.less">
 
@@ -173,49 +175,76 @@ if (isset($_GET['c'])) {
 				<div id="game">
 				</div>
 			</div>
-			<div id="rightpanel" class="panel resize-left">
+			<div id="rightpanel" class="panel panel-vertical resize-left">
 				<div class="inner">
 					<div id="layers-view" class="view">
-						<h4>Layers</h4>
-						<ul class="layers">
-							
-						</ul>
+						<header>
+							<a class="title pull-left">Layers</a>
+							<a class="pull-right add-layer btn btn-mini"><i class="icon-plus"></i> New</a>
+						</header>
+						<article>
+							<ul class="layers">
+								
+							</ul>
+						</article>
 					</div>
-					<div id="inspector" class="view">
-						<h4>Inspector</h4>
-						<p>
-							Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-							tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-							quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-							consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
-							cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-							proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-						</p>
+
+					<div id="layer-properties" class="view">
+						<header>
+							<a class="title pull-left">Layer Properties</a>
+						</header>
+						<article>
+							<input type="text" placeholder="layer name" class="layer-name">
+						</article>
+					</div>
+
+					<div id="spritesheets-view" class="view">
+						<header>
+							<a class="title pull-left">Spritesheets</a>
+						</header>
+						<article>
+							<select class="spritesheets">
+							</select>
+							<div class="tiles">
+							</div>
+						</article>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<div id="bottom" class="panel resize-top">
-			<div id="debug-view" style="display: none;" class="pull-left view">
-				<div class="pull-left editor-debugger view panel">
-					
-				</div>
-				<div class="pull-left editor-log view panel">
-					<p>this is the log panel</p>
+			<div id="project-panel" class="pull-left panel resize-right">
+				<div class="inner">
+					<div id="project-view" class="view">
+						<h4 class="project-name">No project</h4>
+						<ul class="assets">
+							
+						</ul>
+					</div>
 				</div>
 			</div>
-			<div id="project-view" class="pull-left panel view resize-left">
-				<h4 class="project-name">No project</h4>
-				<ul class="assets">
-					
-				</ul>
-			</div>
-			<div id="entities-view" class="view panel pull-right resize-left">
-				<h4>Entities</h4>
-				<p>
-					<i>No entities</i>
-				</p>
+
+			<div id="debug-panel" class="pull-left panel">
+				<div class="inner">
+					<div id="debug-view" style="width: 50%;" class="panel pull-left">
+						<div style="padding: 8px; width:auto;">
+							<h4>Debug</h4>
+							<div class="editor-debugger">
+								
+							</div>
+						</div>
+					</div>
+
+					<div id="log-view" style="width: 50%;" class="panel pull-left">
+						<div class="inner" style="padding: 8px; width: auto;">
+							<h4>Console</h4>
+							<div class="editor-log">
+								Welcome<br>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -275,6 +304,12 @@ if (isset($_GET['c'])) {
 			view: {
 				grid: true,
 			},
+			project: {
+				name: null,
+				scenes: {},
+			},
+			selectedLayer: null,
+			selectedTile: null,
 		};
 
 
@@ -284,8 +319,26 @@ if (isset($_GET['c'])) {
 		var game;
 
 
-
+		/*------------------------------
+		 * Process views
+		 *------------------------------*/
 		$(".view").wrapInner('<div class="inner"/>');
+		$(".view > .inner > header").prepend('<a title="Toggle" class="toggle-view arrow"><i class="icon-white icon-chevron-down"></i></a>')
+			.find('.title').addClass('toggle-view').parents('.view').find('article').addClass('visible');
+
+		//toggle view
+		$(".view .toggle-view").click(function() {
+			var article = $(this).parents('.view').find('article');
+			if (article.hasClass('visible')) {
+				//hide
+				article.slideUp().removeClass('visible');
+				article.siblings('header').find('.toggle-view.arrow i').removeClass('icon-chevron-down').addClass('icon-chevron-right');
+			}else {
+				//show
+				article.slideDown().addClass('visible');
+				article.siblings('header').find('.toggle-view.arrow i').addClass('icon-chevron-down').removeClass('icon-chevron-right');
+			}
+		});
 
 		$(window).resize(function() {
 			$('body').css('overflow', 'hidden');
@@ -303,8 +356,9 @@ if (isset($_GET['c'])) {
 
 			$("#gamepanel").css('width', width * 0.7);
 			$("#rightpanel").css('width', width * 0.3);
-			$("#project-view").css('width', 300);
-			$("#entities-view").css('width', width - $("#project-view").width());
+
+			$("#project-panel").css('width', width * 0.3);
+			$("#debug-panel").css('width', width * 0.7);
 		});
 		$(window).trigger('resize');
 	
@@ -378,7 +432,7 @@ if (isset($_GET['c'])) {
 							if (currentWidth + (left-mouseLeft) > 100) {
 							self.css('width', currentWidth + (left-mouseLeft));
 								//increase previous siblings
-								self.prevAll('.panel, .view').each(function() {
+								self.prevAll('.panel').each(function() {
 									$(this).css('width', '-=' + (left-mouseLeft));
 								});
 							}
@@ -386,7 +440,7 @@ if (isset($_GET['c'])) {
 							self.css('width', currentWidth - (mouseLeft-left));
 
 							//decrease previous siblings
-							self.prevAll('.panel, .view').each(function() {
+							self.prevAll('.panel').each(function() {
 								$(this).css('width', '+=' + (mouseLeft-left));
 							});
 						}
@@ -403,7 +457,69 @@ if (isset($_GET['c'])) {
 		});
 		
 		
+		/*------------------------------
+		 * Resize Right
+		 *------------------------------*/
+		$(".resize-right").each(function() {
+			var self = $(this);
+			$(this).prepend('<div class="resize-handle-right resize-handle"><div class="handle"><div class="bar"></div></div></div>');
+			$(this).find('.resize-handle')
+				.bind('mousedown', function() {
+					$('body').addClass('dragging');
+					$(this).addClass('dragging');
 
+					$(document).bind('mousemove.panel', function(e) {
+						var width = self.width();
+						var position = self.position();
+						var right = position.left + width;
+
+						var mousex = e.pageX;
+
+						if (mousex > right) {
+							//increase width
+							var increase = mousex - right;
+							self.css('width', '+=' + increase);
+
+							self.nextAll('.panel').each(function() {
+								if ($(this).width() - increase > 60) {
+									$(this).css('width', '-=' + increase);
+								}
+							});
+						}else if (mousex < right) {
+							//decrease width
+							var decrease = right - mousex;
+							if (width - decrease > 60) {
+								self.css('width', '-=' + decrease);
+								self.next('.panel').css('width', '+=' + decrease);
+							}
+						}
+
+						//remove excess width
+						var maxWidth = self.parent().width();
+
+						var totalWidth = 0;
+						self.parent().children('.panel').each(function() {
+							totalWidth += $(this).width();
+						});
+
+						if (totalWidth > maxWidth) {
+							//remove excess width
+							var numPanels = self.parent().children('.panel').length;
+							var remove = totalWidth - maxWidth / numPanels;
+							self.parent().children('.panel').css('width', '-=' + remove);
+						}
+
+						//trigger resize on the game
+						engine.settings.currentGame.event.trigger('resize');
+					});
+				});
+
+			$(document).bind('mouseup', function() {
+				self.removeClass('dragging');
+				$('body').removeClass('dragging');
+				$(document).unbind('mousemove.panel');
+			});
+		});
 		
 
 
@@ -431,7 +547,7 @@ if (isset($_GET['c'])) {
 		}
 
 		/*------------------------------
-		 * Open a project
+		 * Open a project button
 		 *------------------------------*/
 		$("#open-project-modal .modal-footer .btn-primary").click(function() {
 			var selected = $("#open-project-modal").find('.project-list input:checked').val();
@@ -471,7 +587,11 @@ if (isset($_GET['c'])) {
 		editor.loadProjectFiles = function(project) {
 			console.log('Loading project ' + project +'...');
 
-			editor.project = project;
+			//set the active project name
+			editor.project.name = project;
+
+			//notify engine of new project URL
+			engine.settings.projectURL = 'http://192.168.1.137/gamedev/' +project +'/';
 
 			$.post(URL +'/editor/?c=loadProjectFiles/' + project, function(dir) {
 				dir = $.parseJSON(dir);
@@ -480,9 +600,216 @@ if (isset($_GET['c'])) {
 
 				//render the directory in the assets view
 				$("#project-view ul.assets").html(editor.displayDir(dir));
+
+				//open the tilesets
+				console.log('-------------');
+				var spritesheets = [];
+				var i,sheet,ext;
+				if (dir.spritesheets !== undefined) {
+					for(i in dir.spritesheets) {
+						sheet = dir.spritesheets[i];
+						sheet = sheet.split('.');
+						ext = sheet.pop();
+						if (ext === 'json') {
+							spritesheets.push(sheet +'.json');
+						}
+					}
+				}
+				spritesheets = spritesheets.join(',');
+
+				//load the spritesheet
+				editor.loadSpritesheet(spritesheets, function() {
+					var view = $("#spritesheets-view");
+					view.find(".spritesheets").html("");
+
+					var name,sheet,slug;
+					for(name in engine.spritesheets) {
+						sheet = engine.spritesheets[name];
+						slug = name.replace(' ', '-');
+						//append to spritesheet dropdown
+						view.find('.spritesheets').append('<option value="' +name +'">' +name +'</option>');
+
+						//create the tileset view, if it doesn't exist.
+						var tileset = view.find('.tiles').find('[data-spritesheet="' +name +'"]');
+						if (!tileset[0]) {
+							view.find('.tiles').append('<div data-spritesheet="' +name +'"></div>');
+							var tileset = view.find('.tiles').find('[data-spritesheet="' +name +'"]');
+						}
+
+						//get the background image
+						var bgImage = sheet.image.src;
+
+						//loop through the frames
+						var i,div,tile;
+						for(i in sheet.sprites) {
+							tile = sheet.sprites[i];
+
+							//create a div
+							tileset.append('<div data-tile="' +i.replace(' ', '') +'" title="' +i.replace(' ', '') +'" class="tile"></div>');
+
+							//store it
+							div = tileset.find('[data-tile="' +i.replace(' ', '') +'"]');
+
+							//add pixel-art class to disable image smoothing
+							div.addClass('pixel-art');
+
+							//set background, width and height
+							var x = 0 - Math.abs(tile.x);
+							var y = 0 - Math.abs(tile.y);
+							div.css({
+								width: tile.width,
+								height: tile.height,
+								backgroundPosition: x +'px ' + y +'px',
+								'background-image': 'url(' +bgImage +')',
+							});
+						}
+					}
+				});
 			});
 		}
 
+
+		/*------------------------------
+		 * Setup tileset events
+		 *------------------------------*/
+
+		//$(document).on('#spritesheets-view .tiles')
+
+
+		/*------------------------------
+		 * Select Tile
+		 *------------------------------*/
+		$(document).on('click', '#spritesheets-view .tiles .tile', function() {
+			//remove selected on all
+			$(this).parents('.tiles').find('.tile').removeClass('selected');
+			$(this).addClass('selected');
+			//find the spritesheet
+			var spritesheet = $(this).parent().attr('data-spritesheet');
+			var tile = $(this).attr('data-tile');
+			editor.selectTile(spritesheet, tile);
+		});
+
+
+		editor.selectTile = function(spritesheet, tile) {
+			console.log('Attempting to select tile "' + tile +'" from spritesheet "' +spritesheet +'"...');
+
+			if (engine.spritesheets[spritesheet].sprites[tile] !== undefined) {
+				//select it
+				editor.selectedTile = engine.spritesheets[spritesheet].sprites[tile];
+				console.log('Tile ' + tile +' selected');
+			}else {
+				alert('Error: tile "' + tile +'" not found in the spritesheet "' +spritesheet +'"!');
+				return false;
+			}
+		}
+
+
+		/*------------------------------
+		 * DEVELOPMENT MODE
+		 *------------------------------*/
+		//editor.loadProjectFiles('etheria');
+
+
+
+		/*------------------------------
+		 * Make layers sortable
+		 *------------------------------*/
+		$("#layers-view ul.layers").sortable({
+			axis: 'y',
+			items: 'li',
+			delay: 100,
+			opacity: 0.7,
+		});
+
+
+		/*------------------------------
+		 * Toggle visibility
+		 *------------------------------*/
+		$(document).on('click', '#layers-view ul.layers li .visible', function() {
+			if ($(this).hasClass('on')) {
+				//turn off
+				$(this).removeClass('on');
+			}else {
+				//turn on
+				$(this).addClass('on');
+			}
+		});
+
+
+		/*------------------------------
+		 * Select layer
+		 *------------------------------*/
+
+		editor.selectLayer = function(id) {
+			editor.selectedLayer = id;
+		}
+
+		$(document).on('click', '#layers-view ul.layers li', function() {
+			$("#layers-view ul.layers li").removeClass('selected');
+			$(this).addClass('selected');
+			//get the id
+			var id = $(this).attr('data-id');
+			console.log('Selecting layer ' + id);
+			//select it
+			editor.selectLayer(id);
+		});
+
+
+
+
+		/*------------------------------
+		 * Add Layer event
+		 *------------------------------*/
+		$(document).on('click', '#layers-view .add-layer', function() {
+			editor.createLayer();
+		});
+
+
+		/*------------------------------
+		 * Create Layer
+		 *------------------------------*/
+		editor.createLayer = function() {
+			console.log('Attempting to create layer...');
+			//is there an active scene?
+			if (game.scene !== null) {
+				
+				//create the layer object
+				var newLayer = new engine.Scene.Layer('new layer');
+
+				//add it to the scene
+				var id = game.scene.layers.push(newLayer);
+
+				//create the html element
+				$("#layers-view ul.layers").append('<li data-id="' +id +'"><div class="handle"></div><div class="item"><div class="inner"><div class="visible"></div><div class="name">new layer</div></div></div><a class="delete"><i class="icon-white icon-remove"></i></a></li>');
+
+			}else {
+				console.log('No active scene. Aborting.');
+			}
+		};
+
+
+
+
+
+
+		/*------------------------------
+		 * Select layer
+		 *------------------------------*/
+		editor.selectLayer = function(layer) {
+
+		};
+
+		/*------------------------------
+		 * Load spritesheet
+		 *------------------------------*/
+		editor.loadSpritesheet = function(spritesheet, callback) {
+			spritesheet = $.trim(spritesheet, ',');
+			engine.preload({
+				project: {
+					spritesheets: spritesheet,
+				},
+			}, null, callback);
+		};
 
 
 		/*------------------------------
@@ -511,14 +838,55 @@ if (isset($_GET['c'])) {
 		 *------------------------------*/
 		editor.newScene = function() {
 			//check that we have an open project
-			if (editor.project === undefined) {
+			if (editor.project.name === undefined) {
 				alert('Please open or create a project before adding scenes!');
 				return false;
 			}
 			
 			//open the new scene modal
-			$("#new-scene-modal").modal('show');
+			$("#new-scene-modal").modal('show').find('.scene-name').val('');
 		};
+
+
+		$("#new-scene-modal .modal-footer .btn-primary").click(function() {
+			//get scene name
+			var name = $("#new-scene-modal .scene-name").val();
+
+			//create it
+			editor.project.scenes[name] = new engine.Scene(name);
+
+			//set grid or not
+			editor.project.scenes[name].displayGrid = editor.view.grid;
+
+			//hook into update, set up scene editing
+			editor.project.scenes[name].event.bind('update_pre', function(dt) {
+				//Tile placement
+				if (game.input.mouse['1']) {
+					//are we placing or removing a tile?
+					if (game.input.keys['shift'] == true) {
+						//remove tile
+						console.log('removing tile');
+					}else {
+						//place tile
+						console.log('placing tile');
+					}
+				}
+			});
+
+			//render
+			editor.project.scenes[name].event.bind('render_post', function(g) {
+				g.globalAlpha = 1;
+				//do we have a tile selected?
+				if (editor.selectedTile !== null) {
+					g.fillStyle = 'white';
+					editor.selectedTile.render(g, game.input.mouse.pos.x-16, game.input.mouse.pos.y-16, 32, 32);
+				}
+			});
+
+			//stage scene
+			game.stage(editor.project.scenes[name]);
+		});
+
 
 
 
@@ -526,14 +894,14 @@ if (isset($_GET['c'])) {
 		 * Load Scene
 		 *------------------------------*/
 		editor.loadScene = function(scene) {
-			if (editor.project === undefined) {
+			if (editor.project.name === undefined) {
 				alert('Cannot open scene, not in a proejct.');
 				return false;
 			}
 			console.log('Loading scene ' + scene +'...');
 			//do an ajax call to fetch the scene JSON
 			game.scene = null;
-			$.post(URL +'/' + editor.project +'/scenes/' + scene, function(data) {
+			$.post(URL +'/' + editor.project.name +'/scenes/' + scene, function(data) {
 				console.log(data);
 
 				var scene = new engine.Scene(data.name);
@@ -590,8 +958,8 @@ if (isset($_GET['c'])) {
 		 * Initial Engine setup
 		 *------------------------------*/
 		engine.setup({
-			engineURL: 'http://localhost/gamedev/engine/',
-			projectURL: 'http://localhost/gamedev/etheria/',
+			engineURL: 'http://192.168.1.137/gamedev/engine/',
+			projectURL: 'http://192.168.1.137/gamedev/etheria/',
 			isEditor: true,
 		});
 

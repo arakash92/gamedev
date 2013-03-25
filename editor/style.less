@@ -19,6 +19,15 @@ body.dragging, body.dragging * {
 	user-select: all;
 }
 
+.noselect {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;	
+}
+
 .modal {
 	background-color: #252525;
 	.modal-header {
@@ -41,14 +50,48 @@ a {
 	position: relative;
 	min-width: 30px;
 	min-height: 30px;
+	> .inner {
+		overflow-y: auto;
+		height: 100%;
+		width: 100%;
+	}
 }
 
 .view {
 	min-width: 30px;
 	min-height: 30px;
-	overflow-y: scroll;
+
 	> .inner {
-		padding: 8px;
+		padding: 12px;
+
+		> header {
+			//disable text selection
+			.noselect;
+
+			clear: both;
+			background: #282828;
+			float: left;
+			width: 100%;
+			border-radius: 4px;
+			padding: 3px 6px;
+			margin-bottom: 6px;
+
+			> .toggle-view {
+				float: left;
+				position: relative;
+				top: 2px;
+			}
+			> a.title {
+				float: left;
+				margin: 0;
+				margin-left: 8px;
+				text-decoration: none;
+			}
+		}
+		> article {
+			clear: both;
+			width: 100%;
+		}
 	}
 }
 
@@ -64,7 +107,7 @@ a {
 		position: absolute;
 
 		.bar {
-			background: #fff;
+			background: #666;
 		}
 	}
 	&:hover {
@@ -99,6 +142,32 @@ a {
 	}
 }
 
+.resize-right {
+	.resize-handle-right {
+		position: absolute;
+		right: 0px;
+		width: 8px;
+		height: 100%;
+
+		&:hover {
+			cursor: w-resize;
+		}
+
+		.handle {
+			height: 100%;
+			width: 100%;
+			right: -4px;
+
+			.bar {
+				position: absolute;
+				height: 100%;
+				width: 1px;
+				right: 4px;
+			}
+		}
+	}
+}
+
 .resize-top {
 	.resize-handle-top {
 		position: absolute;
@@ -125,11 +194,14 @@ a {
 }
 
 
+#gamepanel #game {
+	border: none;
+}
 
 
 #project-view {
 	height: 100%;
-	overflow-y: scroll;
+	max-height: 100%;
 	ul.assets {
 		margin: 0;
 		padding: 0;
@@ -147,8 +219,117 @@ a {
 	}
 }
 
+#layers-view {
+	ul.layers {
+		margin: 0;
+		padding: 0;
+		list-style-type: none;
+
+		li {
+			//make each layer non-selectable
+			.noselect;
+			cursor: default;
+
+			width: 100%;
+			float: left;
+			clear: both;
+			background: #242424;
+			margin: 4px;
+			border-radius: 2px;
+			border: 1px solid #333;
+
+			&.selected {
+				background: #151515;
+				.name {
+					color: white;
+				}
+			}
+
+			.handle {
+				height: 28px;
+				width: 12px;
+				border-right: 1px solid #282828;
+				background: #454545;
+				float: left;
+				cursor: move;
+				&:hover {
+					background: #555555;
+				}
+			}
+
+			.item {
+				float: left;
+
+				.inner {
+					padding: 6px;
+
+					.visible {
+						float: left;
+						width: 14px;
+						height: 14px;
+						background: #444;
+						border-radius: 2px;
+						margin: 1px;
+						margin-right: 6px;
+
+						cursor: pointer;
+
+						&.on {
+							width: 9px;
+							height: 9px;
+							border: 2px solid #444;
+							background: #0088cc;
+						}
+					}
+					.name {
+						float: left;
+						position: relative;
+						top: -1px;
+					}
+				}
+			}
+			.delete {
+				float: right;
+				margin-right: 8px;
+				margin-top: 3px;
+			}
+		}
+	}
+}
+
+#spritesheets-view {
+
+	select.spritesheets {
+		option {
+			background-color: #333;
+		}
+	}
+
+	.tiles .tile {
+		float: left;
+		margin: 2px;
+		cursor: pointer;
+
+		//hover
+		&:hover {
+			margin: 1px;
+			border: 1px solid darken(#33DAFF, 20%);
+		}
+
+		//selected
+		&.selected {
+			margin: 0px;
+			border: 2px solid #33DAFF;
+		}
+	}
+}
 
 
+
+.shadowinset {
+	-webkit-box-shadow: inset 0px 0px 6px 0px rgba(000, 000, 000, 1);
+	box-shadow: inset 0px 0px 6px 0px rgba(000, 000, 000, 1);
+}
 
 #wrapper {
 	height: 100%;
@@ -169,10 +350,16 @@ a {
 		#gamepanel {
 			float: left;
 			height: 100%;
+			.shadowinset;
 		}
 		#rightpanel {
 			float: left;
 			height: 100%;
+			.shadowinset;
+			.view  {
+				clear: both;
+				width: 100%;
+			}
 		}
 	}
 	#bottom {
@@ -180,10 +367,14 @@ a {
 		z-index: 102;
 		width: 100%;
 		bottom: 0px;
+		.shadowinset;
+
+		.panel {
+			height: 100%;
+		}
 
 		.view {
 			height: 100%;
-			overflow: scroll;
 		}
 	}
 }
