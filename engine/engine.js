@@ -226,7 +226,7 @@ engine = Class.extend({
 		engine.settings.currentGame = this;
 		console.log('Instantiating new engine instance...');
 		var self = this;
-	
+		
 		/*------------------------------
 		 * Initialize canvas & context
 		 *------------------------------*/
@@ -316,6 +316,21 @@ engine = Class.extend({
 			this.rotationCanvas.width = width;
 			this.rotationCanvas.height = height;
 
+			//disable image smoothing
+			if (this.options.imageSmoothingEnabled == false) {
+				this.ctx.imageSmoothingEnabled = false;
+				this.ctx.mozImageSmoothingEnabled = false;
+				this.ctx.webkitImageSmoothingEnabled = false;
+
+				this.bufferCtx.imageSmoothingEnabled = false;
+				this.bufferCtx.mozImageSmoothingEnabled = false;
+				this.bufferCtx.webkitImageSmoothingEnabled = false;
+
+				this.rotationCtx.imageSmoothingEnabled = false;
+				this.rotationCtx.mozImageSmoothingEnabled = false;
+				this.rotationCtx.webkitImageSmoothingEnabled = false;
+			}
+			
 		}else {
 			var width = 1200;
 			var height = 700;
@@ -834,6 +849,17 @@ engine.Vector = Class.extend({
 	getAngle: function() {
 		return Math.atan2(this.x, this.y);
 		//radians = PI / 180 * angle;
+	},
+
+	rotate: function(angle) {
+		var s = Math.sin(angle);
+		var c = Math.cos(angle);
+
+		var nx = c * this.x - s * this.y;
+		var ny = s * this.x + c * this.y;
+
+		this.x = nx;
+		this.y = ny;
 	},
 
 	clone: function() {

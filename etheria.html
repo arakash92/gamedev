@@ -538,6 +538,19 @@
 			var playerSprites = engine.spritesheets.player;
 			var player = new engine.Entity(300, 300, 48, 48);
 
+			//dust particles
+			var dustParticles = new engine.components.ParticleSystem(0,-8, {
+				color: 'yellow',
+				velocity: 0.5,
+				direction: 'left',
+				directionDegree: 20,
+				longevity: 1000,
+				width: 3,
+				height: 3,
+			});
+			dustParticles.options.gravity.y = -0.01;
+			player.attach('dustParticles', dustParticles);
+
 			//idle up
 			var idle_up = new engine.components.SpriteAnim(-48, -48, 200,
 				[playerSprites.get('player_idle_up.png')],
@@ -615,9 +628,12 @@
 			player.size.x = 24;
 			player.size.y = 24;
 			player.offset.y = -10;
+
+
+
 			//Player update
 			player.event.bind('update_pre', function(dt) {
-
+				
 				//reset stuff
 				player.moving = false;
 				player.canMoveUp = true;
@@ -697,33 +713,42 @@
 				player.components['walk_left'].alive = false;
 
 				
-				var speed = (game.input.keys['shift']) ? 6 : 3;
+				var speed = (game.input.keys['shift']) ? 3 : 2;
 
 				if (game.input.keys['w'] && player.canMoveUp) {
 					player.moving = true;
 					player.direction = 'up';
+					player.components.dustParticles.options.direction = 'down';
 					player.pos.y -= speed * dt;
 				}
 				if (game.input.keys['a'] && player.canMoveLeft) {
 					player.moving = true;
 					player.direction = 'left';
+					player.components.dustParticles.options.direction = 'right';
 					player.pos.x -= speed * dt;
 				}
 				if (game.input.keys['s'] && player.canMoveDown) {
 					player.moving = true;
 					player.direction = 'down';
+					player.components.dustParticles.options.direction = 'up';
 					player.pos.y += speed * dt;
 				}
 				if (game.input.keys['d'] && player.canMoveRight) {
 					player.moving = true;
 					player.direction = 'right';
+					player.components.dustParticles.options.direction = 'left';
 					player.pos.x += speed * dt;
 				}
 
 				if (player.moving === true) {
+					//set walking spriteAnim
 					player.components['walk_' + player.direction].alive = true;
+
+					//set birthrate and direction for our dust particles
+					player.components.dustParticles.options.birthRate = 0.1;
 				}else {
 					player.components['idle_' + player.direction].alive = true;
+					player.components.dustParticles.options.birthRate = 0;
 				}
 
 			});

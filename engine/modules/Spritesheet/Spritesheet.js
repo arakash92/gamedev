@@ -19,6 +19,7 @@ engine.registerModule('Spritesheet', '0.1.0')
 					if (height === undefined) {
 						height = this.height;
 					}
+					g.globalAlpha = 1;
 					g.drawImage(this.image, this.x, this.y, this.width, this.height, x, y, width, height);
 				},
 			}),

@@ -6,12 +6,12 @@ engine.registerModule('Scene', '0.1.0')
 				this.layers = [];
 				this.effect = null;
 				this.displayGrid = true;
-				this.gridSize = 64;
+				this.gridSize = 48;
 				this.gridAlpha = 0.3;
 				this.gridColor = 'white';
 				this.gridWidth = 1;
 				this.event = new engine.Event();
-				this.camera = new engine.Scene.Camera(0, 0, engine.settings.currentGame.canvas.width, engine.settings.currentGame.canvas.height);
+				this.camera = new engine.Scene.Camera(-24, -24, engine.settings.currentGame.canvas.width+48, engine.settings.currentGame.canvas.height+48);
 				this.collisionCache = [];
 			},
 			unstage: function() {
@@ -90,7 +90,7 @@ engine.registerModule('Scene', '0.1.0')
 			render: function(g) {
 				this.event.trigger('render_pre', g)
 
-				//update layers
+				//update layers@
 				var i,layer;
 				for (i in this.layers) {
 					layer = this.layers[i];
@@ -117,6 +117,7 @@ engine.registerModule('Scene', '0.1.0')
 			init: function(name) {
 				this.visible = true;
 				this.isCollision = false;
+				this.gridSize = 48;
 				this.entities = [];
 
 				if (typeof name == 'string') {

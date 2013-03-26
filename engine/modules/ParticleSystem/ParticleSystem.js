@@ -20,7 +20,7 @@ engine.registerModule('ParticleSystem', '0.1.0')
 					this.absolutePos = new engine.Vector(0,0);
 					this.velocity = new engine.Vector();
 					this.acceleration = new engine.Vector();
-					this.decceleration = 0.01;
+					this.decceleration = 0.001;
 
 					this.size = new engine.Vector(1,1);
 					this.alpha = 1;
@@ -83,17 +83,25 @@ engine.registerModule('ParticleSystem', '0.1.0')
 
 				this.options = {
 					maxParticles: 500,
-					longevity: 2000,
+					gravity: new engine.Vector(),
+					longevity: 3000,
 					birthRate: 1,
 					color: 'random',//can be a color value or simply 'random'
 					direction: 'random',//random,vertical,horizontal,left,right,up,down
-					directionDegree: 15,//randomness in direction in degrees
+					directionDegree: 45,//randomness in direction in degrees
 					velocity: 2,//initial particle velocity
 					fadeout: true,//whether particles will fade out when dying
+					width: 1,
+					height: 1,
 				};
 
-				//pre allocate particles
+				//set options
 				var i;
+				for(i in options) {
+					this.options[i] = options[i];
+				}
+
+				//pre allocate particles
 				for(i = 0; i < this.options.maxParticles; i++) {
 					this.particles.push(new this.Particle());
 				}
@@ -103,7 +111,7 @@ engine.registerModule('ParticleSystem', '0.1.0')
 
 			getRandomColor: function() {
 				var color = '#';
-				for(var i = 0; i < 6;i++) {
+				for(var i = 0; i < 3;i++) {
 					color += this.hexValues[Math.randomBetween(0, this.hexValues.length)]
 				}
 				return color;
@@ -123,10 +131,16 @@ engine.registerModule('ParticleSystem', '0.1.0')
 						p.longevity = this.options.longevity;
 						p.absolutePos = this.absolutePos;
 
+						//size
+						p.size.x = this.options.width;
+						p.size.y = this.options.height;
+
 						//color
 						if (this.options.color == 'random') {
 							//p.color = this.getRandomColor();
 							p.color = 'red';
+						}else {
+							p.color = this.options.color;
 						}
 
 						//alpha
@@ -135,8 +149,46 @@ engine.registerModule('ParticleSystem', '0.1.0')
 						//fadeout
 						p.fadeout = this.options.fadeout;
 
-						p.acceleration.x = Math.randomBetween(-3,3);
-						p.acceleration.y = Math.randomBetween(-3,3);
+						//set the direction
+						var direction = new engine.Vector();
+						switch(this.options.direction) {
+							case 'random':
+								direction.x = Math.randomBetween(-1,1);
+								direction.y = Math.randomBetween(-1,1);
+								direction.normalize();
+							break;
+							case 'left':
+								direction.x = -1
+								direction.y = 0;
+								direction.normalize();
+								direction.rotate(Math.degToRad(Math.randomBetween(0-Math.abs(this.options.directionDegree), Math.abs(this.options.directionDegree))));
+							break;
+							case 'right':
+								direction.x = 1
+								direction.y = 0;
+								direction.normalize();
+								direction.rotate(Math.degToRad(Math.randomBetween(0-Math.abs(this.options.directionDegree), Math.abs(this.options.directionDegree))));
+							break;
+							case 'up':
+								direction.x = 0
+								direction.y = -1;
+								direction.normalize();
+								direction.rotate(Math.degToRad(Math.randomBetween(0-Math.abs(this.options.directionDegree), Math.abs(this.options.directionDegree))));
+							break;
+							case 'down':
+								direction.x = 0
+								direction.y = 1;
+								direction.normalize();
+								direction.rotate(Math.degToRad(Math.randomBetween(0-Math.abs(this.options.directionDegree), Math.abs(this.options.directionDegree))));
+							break;
+						}
+
+						direction.mult(this.options.velocity);
+						//multiply by velocity
+
+						//set accel
+						p.acceleration.x = direction.x;
+						p.acceleration.y = direction.y;
 
 						counter++;
 					}
@@ -165,6 +217,7 @@ engine.registerModule('ParticleSystem', '0.1.0')
 				var i,p;
 				for(i in this.particles) {
 					p = this.particles[i];
+					p.acceleration.add(this.options.gravity);
 					p.update(dt);
 				}
 			},

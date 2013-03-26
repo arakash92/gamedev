@@ -47,6 +47,7 @@ engine.registerModule('SpriteAnim', '0.1.0')
 				}
 			},
 			render: function(g) {
+				g.globalAlpha = 1;
 				this.sprites[this.position].render(g, this.absolutePos.x, this.absolutePos.y-(this.size.y/2), this.size.x, this.size.y);
 			},
 		});

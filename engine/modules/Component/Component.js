@@ -67,7 +67,7 @@ engine.registerModule('Component', '0.1.0')
 		
 		engine.Component = Class.extend({
 			init: function(x, y) {
-				this.debug = true;
+				this.debug = false;
 				this.entity = null;
 				this.alive = true;//whether it will be updated or not
 				this.visible = true;//whether it is visible or not

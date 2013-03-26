@@ -194,7 +194,19 @@ if (isset($_GET['c'])) {
 							<a class="title pull-left">Layer Properties</a>
 						</header>
 						<article>
-							<input type="text" placeholder="layer name" class="layer-name">
+							
+							<form>
+							  <fieldset>
+							    <label>Name</label>
+							    <input class="layer-name" type="text" placeholder="layer name">
+							    <label>Grid Size</label>
+							    <input class="layer-gridsize" type="text" placeholder="Grid Size" value="48">
+							    <label class="checkbox">
+							    	<input type="checkbox" class="layer-iscollision">isCollision
+							    </label>
+							    <span class="help-block">Whether this is a collision layer</span>
+							  </fieldset>
+							</form>
 						</article>
 					</div>
 
@@ -719,21 +731,64 @@ if (isset($_GET['c'])) {
 			items: 'li',
 			delay: 100,
 			opacity: 0.7,
+			update: function() {
+				var items = [];
+				$(this).children('li').each(function() {
+					var id = $(this).attr('data-id');
+					items.push(id);
+				});
+				//trigger a reload with an array of IDs.
+				editor.reorderLayers(items);
+			},
 		});
+
+
+		/*------------------------------
+		 * Reorder layers
+		 *------------------------------*/
+		editor.reorderLayers = function(items) {
+			//build new array
+			var i;
+			for(i in items) {
+				items[i] = game.scene.layers[items[i]];
+			}
+			game.scene.layers = items;
+			console.log('Layers reordered.');
+		}
 
 
 		/*------------------------------
 		 * Toggle visibility
 		 *------------------------------*/
+		editor.toggleLayerVisibility = function(id, on) {
+			console.log('Setting visibility of layer ' + id +' to ' + on);
+			game.scene.layers[id].visible = on;
+		}
+
 		$(document).on('click', '#layers-view ul.layers li .visible', function() {
+			var id = $(this).parents('li').attr('data-id');
 			if ($(this).hasClass('on')) {
 				//turn off
 				$(this).removeClass('on');
+				editor.toggleLayerVisibility(id, false);
 			}else {
 				//turn on
 				$(this).addClass('on');
+				editor.toggleLayerVisibility(id, true);
 			}
 		});
+
+
+		/*------------------------------
+		 * Layer properties
+		 *------------------------------*/
+		$('#layer-properties .layer-name').keyup(function() {
+			var val = $(this).val();
+			game.scene.layers[editor.selectedLayer].name = val;
+			$("#layers-view ul.layers li[data-id=" +editor.selectedLayer +"] .name").html(val);
+		});
+
+
 
 
 		/*------------------------------
@@ -742,6 +797,11 @@ if (isset($_GET['c'])) {
 
 		editor.selectLayer = function(id) {
 			editor.selectedLayer = id;
+
+			console.log('Selecting layer ' + id);
+			//set the layer properties view
+
+			$("#layer-properties .layer-name").val(game.scene.layers[id].name);
 		}
 
 		$(document).on('click', '#layers-view ul.layers li', function() {
@@ -749,7 +809,7 @@ if (isset($_GET['c'])) {
 			$(this).addClass('selected');
 			//get the id
 			var id = $(this).attr('data-id');
-			console.log('Selecting layer ' + id);
+
 			//select it
 			editor.selectLayer(id);
 		});
@@ -777,10 +837,10 @@ if (isset($_GET['c'])) {
 				var newLayer = new engine.Scene.Layer('new layer');
 
 				//add it to the scene
-				var id = game.scene.layers.push(newLayer);
+				var id = game.scene.layers.push(newLayer) - 1;
 
 				//create the html element
-				$("#layers-view ul.layers").append('<li data-id="' +id +'"><div class="handle"></div><div class="item"><div class="inner"><div class="visible"></div><div class="name">new layer</div></div></div><a class="delete"><i class="icon-white icon-remove"></i></a></li>');
+				$("#layers-view ul.layers").prepend('<li data-id="' +id +'"><div class="handle"></div><div class="item"><div class="inner"><div class="visible on"></div><div class="name">new layer</div></div></div><a class="delete"><i class="icon-white icon-remove"></i></a></li>');
 
 			}else {
 				console.log('No active scene. Aborting.');
@@ -788,16 +848,6 @@ if (isset($_GET['c'])) {
 		};
 
 
-
-
-
-
-		/*------------------------------
-		 * Select layer
-		 *------------------------------*/
-		editor.selectLayer = function(layer) {
-
-		};
 
 		/*------------------------------
 		 * Load spritesheet
@@ -877,9 +927,13 @@ if (isset($_GET['c'])) {
 			editor.project.scenes[name].event.bind('render_post', function(g) {
 				g.globalAlpha = 1;
 				//do we have a tile selected?
-				if (editor.selectedTile !== null) {
+				if (editor.selectedTile !== null && editor.selectedLayer !== null) {
 					g.fillStyle = 'white';
-					editor.selectedTile.render(g, game.input.mouse.pos.x-16, game.input.mouse.pos.y-16, 32, 32);
+					//normalise position
+					var x = game.input.mouse.pos.x-24;
+					var y = game.input.mouse.pos.y-24;
+
+					editor.selectedTile.render(g, x, y, 48, 48);
 				}
 			});
 
