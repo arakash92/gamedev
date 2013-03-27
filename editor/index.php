@@ -243,7 +243,8 @@ if (isset($_GET['c'])) {
 						<div style="padding: 8px; width:auto;">
 							<h4>Debug</h4>
 							<div class="editor-debugger">
-								
+								<div class="inner">
+								</div>
 							</div>
 						</div>
 					</div>
@@ -252,7 +253,8 @@ if (isset($_GET['c'])) {
 						<div class="inner" style="padding: 8px; width: auto;">
 							<h4>Console</h4>
 							<div class="editor-log">
-								Welcome<br>
+								<div class="inner">
+								</div>
 							</div>
 						</div>
 					</div>
@@ -324,6 +326,42 @@ if (isset($_GET['c'])) {
 			selectedTile: null,
 		};
 
+
+		/*------------------------------
+		 * Tile class
+		 *------------------------------*/
+
+		editor.Tile = Class.extend({
+			init: function(sprite, x, y, width, height) {
+				this.sprite = sprite;
+				this.absPos = new engine.Vector();
+
+				if (x === undefined) x = 0;
+				if (y === undefined) y = 0;
+				this.pos = new engine.Vector(x, y);
+
+				if (width === undefined) width = engine.settings.currentGame.scene.gridSize;
+				if (height === undefined) height = engine.settings.currentGame.scene.gridSize;
+				this.width = width;
+				this.height= height;
+			},
+			getArea: function() {
+				return {
+					left: this.pos.x,
+					right: this.pos.x + this.width,
+					top: this.pos.y,
+					bottom: this.pos.y + this.height,
+				};
+			},
+			update: function(dt) {
+				this.absPos.x = this.pos.x;
+				this.absPos.y = this.pos.y;
+				this.absPos.sub(engine.settings.currentGame.scene.camera.pos);
+			},
+			render: function(g) {
+				this.sprite.render(g, this.absPos.x, this.absPos.y, this.width, this.height);
+			},
+		});
 
 		/*------------------------------
 		 * Game variable
@@ -782,10 +820,22 @@ if (isset($_GET['c'])) {
 		/*------------------------------
 		 * Layer properties
 		 *------------------------------*/
+		//name
 		$('#layer-properties .layer-name').keyup(function() {
 			var val = $(this).val();
 			game.scene.layers[editor.selectedLayer].name = val;
 			$("#layers-view ul.layers li[data-id=" +editor.selectedLayer +"] .name").html(val);
+		});
+		//gridSize
+		$("#layer-properties .layer-gridsize").change(function() {
+			var patt=/[^0-9]/g;
+			var str = $(this).val();
+			str = str.replace(patt, '');
+			$(this).val(str);
+			if (game.scene.layers[editor.selectedLayer] !== undefined) {
+				game.scene.layers[editor.selectedLayer].gridSize = parseInt(str);
+				game.scene.gridSize = str;
+			}
 		});
 
 
@@ -797,11 +847,14 @@ if (isset($_GET['c'])) {
 
 		editor.selectLayer = function(id) {
 			editor.selectedLayer = id;
-
 			console.log('Selecting layer ' + id);
-			//set the layer properties view
 
+			//set the layer properties view
 			$("#layer-properties .layer-name").val(game.scene.layers[id].name);
+			$("#layer-properties .layer-gridsize").val(game.scene.layers[id].gridSize);
+
+			//set the scene gridsize
+			game.scene.gridSize = game.scene.layers[id].gridSize;
 		}
 
 		$(document).on('click', '#layers-view ul.layers li', function() {
@@ -818,7 +871,7 @@ if (isset($_GET['c'])) {
 
 
 		/*------------------------------
-		 * Add Layer event
+		 * Add Layer
 		 *------------------------------*/
 		$(document).on('click', '#layers-view .add-layer', function() {
 			editor.createLayer();
@@ -847,6 +900,15 @@ if (isset($_GET['c'])) {
 			}
 		};
 
+
+		/*------------------------------
+		 * Place tile
+		 *------------------------------*/
+		editor.placeTile = function(layer, tile, x, y) {
+
+			//var tile = new engine.Tile.Sprite(tile, x, y, w, h);
+
+		};
 
 
 		/*------------------------------
@@ -912,13 +974,41 @@ if (isset($_GET['c'])) {
 			editor.project.scenes[name].event.bind('update_pre', function(dt) {
 				//Tile placement
 				if (game.input.mouse['1']) {
-					//are we placing or removing a tile?
+					//grid size
+					var gridSize = game.scene.gridSize;
+
+					//get mouse position
+					var x = game.input.mouse.pos.x - (gridSize/2);
+					var y = game.input.mouse.pos.y - (gridSize/2);
+
+					//gridify
+					x = Math.round(x/gridSize) * gridSize;
+					y = Math.round(y/gridSize) * gridSize;
+					
+					
+					//transform to absolute
+					//x -= game.scene.camera.pos.x;
+					//y -= game.scene.camera.pos.y;
+
 					if (game.input.keys['shift'] == true) {
 						//remove tile
-						console.log('removing tile');
+						//find the tile on the currently selected layer
+						var i,tile;
+						for(i in game.scene.layers[editor.selectedLayer].entities) {
+							tile = game.scene.layers[editor.selectedLayer].entities[i];
+							//check the position
+							if (tile.pos.x == x && tile.pos.y == y) {
+								//remove it
+								var removed = game.scene.layers[engine.selectedLayer].entities.splice(i);
+								console.log('Tile removed:');
+								console.log(removed);
+								break;//break out of the for loop. We don't need to check more now.
+							}
+						}
 					}else {
 						//place tile
-						console.log('placing tile');
+						var tile = new editor.Tile(editor.selectedTile, x, y, gridSize, gridSize);
+						game.scene.layers[editor.selectedLayer].entities.push(tile);
 					}
 				}
 			});
@@ -928,12 +1018,24 @@ if (isset($_GET['c'])) {
 				g.globalAlpha = 1;
 				//do we have a tile selected?
 				if (editor.selectedTile !== null && editor.selectedLayer !== null) {
-					g.fillStyle = 'white';
 					//normalise position
-					var x = game.input.mouse.pos.x-24;
-					var y = game.input.mouse.pos.y-24;
+					var gridSize = game.scene.gridSize;
 
-					editor.selectedTile.render(g, x, y, 48, 48);
+					//get mouse position
+					var x = game.input.mouse.pos.x - (gridSize/2);
+					var y = game.input.mouse.pos.y - (gridSize/2);
+
+					//gridify
+					x = Math.round(x/gridSize) * gridSize;
+					y = Math.round(y/gridSize) * gridSize;
+
+
+					//transform to absolute
+					x -= game.scene.camera.pos.x;
+					y -= game.scene.camera.pos.y;
+
+					//draw tile
+					editor.selectedTile.render(g, x, y, gridSize, gridSize);
 				}
 			});
 
@@ -1044,34 +1146,6 @@ if (isset($_GET['c'])) {
 					}else if (y == -1) {
 						game.scene.camera.zoomOut();
 					}
-				}
-			});
-
-
-			/*------------------------------
-			 * Camera dragging
-			 *------------------------------*/
-			var dragStart = new engine.Vector();
-			var dragging = false;
-			game.event.bind('update_pre', function() {
-				if (game.input.mouse['2'] || game.input.keys['space']) {
-					if (dragging === true) {
-						//continue drag
-
-						//has the mouse moved?
-						if (game.input.mouse.pos.x !== dragStart.x || game.input.mouse.pos.y !== dragStart.y) {
-							game.scene.camera.pos.x = dragStart.x - game.input.mouse.pos.x;
-							game.scene.camera.pos.y = dragStart.y - game.input.mouse.pos.y;
-						}
-					}else {
-						//start dragging
-						dragging = true;
-						dragStart.x = game.scene.camera.pos.x + game.input.mouse.pos.x;
-						dragStart.y = game.scene.camera.pos.y + game.input.mouse.pos.y;
-					}
-				}else if (dragging === true) {
-					//dragging stopped
-					dragging = false;
 				}
 			});
 

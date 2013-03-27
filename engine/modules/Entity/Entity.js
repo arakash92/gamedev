@@ -16,6 +16,12 @@ engine.registerModule('Entity', '0.1.0')
 				this.acceleration = new engine.Vector();
 				this.velocity = new engine.Vector();
 
+				//collision stuff
+				this.collideLeft = false;
+				this.collideTop = false;
+				this.collideRight = false;
+				this.collideBottom = false;
+
 				this.event = new engine.Event();
 
 				if (x !== undefined) {
@@ -50,6 +56,57 @@ engine.registerModule('Entity', '0.1.0')
 			},
 			
 			update: function(dt) {
+				//reset collision values
+				this.collideLeft = false;
+				this.collideTop = false;
+				this.collideRight = false;
+				this.collideBottom = false;
+
+				var i, box, area,top,left,right,bottom;
+				for(i in engine.settings.currentGame.scene.collisionCache) {
+					box = engine.settings.currentGame.scene.collisionCache[i];
+					
+					var within = {y:false,x:false};
+					area = this.getArea();
+					
+					//check X
+					if ((area.left >= box.left && area.left <= box.right) || (area.right >= box.left && area.right <= box.right)) {
+						within.x = true;
+					}
+					//check Y
+					if ((area.top >= box.top && area.top <= box.bottom) || (area.bottom >= box.top && area.top <= box.top)) {
+						within.y = true;
+					}
+
+					if (within.x === true && within.y === true) {
+						top = Math.abs(box.top - area.bottom);
+
+						left = Math.abs(box.left - area.right);
+
+						right = Math.abs(box.right - area.left);
+
+						bottom = Math.abs(box.bottom - area.top);
+
+						if (top < left && top < right && top < bottom) {
+							//top
+							this.collideBottom = true;
+							this.pos.y -= top;
+						}else if (left < top && left < right && left < bottom) {
+							//left
+							this.collideRight = true;
+							this.pos.x -= left;
+						}else if (right < left && right < top && right < bottom) {
+							//right
+							this.collideLeft = true;
+							this.pos.x += right;
+						}else if (bottom < left && bottom < right && bottom < top) {
+							//bottom
+							this.collideTop = true;
+							this.pos.y += bottom;
+						}
+					}
+				}
+
 				this.velocity.reset();
 				this.event.trigger('update_pre', dt);
 
@@ -60,6 +117,7 @@ engine.registerModule('Entity', '0.1.0')
 				this.event.trigger('update_post');
 				this.pos.add(this.velocity);
 			},
+
 			updateEditor: function(dt) {
 				
 			},
@@ -75,6 +133,7 @@ engine.registerModule('Entity', '0.1.0')
 			render: function(g) {
 				this.renderDebug(g);
 			},
+
 			renderEditor: function(g) {
 
 			},

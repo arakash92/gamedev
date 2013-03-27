@@ -8,11 +8,11 @@
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 
 	<!--jquery & jquery ui-->
-	<script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
-	<script type="text/javascript" src="http://code.jquery.com/ui/1.10.1/jquery-ui.js"></script>
+	<script type="text/javascript" src="engine/lib/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="engine/lib/jquery/jquery-ui.js"></script>
 
 	<!-- jquery UI css -->
-	<link rel="stylesheet" type="text/css" hreF="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css">
+	<link rel="stylesheet" type="text/css" hreF="engine/lib/jquery/jquery-ui.css">
 	
 	<!--bootsrap js-->
 	<script src="engine/lib/bootstrap/js/bootstrap.min.js"></script>
@@ -24,7 +24,7 @@
 	<link href="engine/lib/bootstrap/css/darkstrap.css" type="text/css" rel="stylesheet">
 
 	<!--create.js for sound-->
-	<script type="text/javascript" src="http://code.createjs.com/createjs-2013.02.12.min.js"></script>
+	<script type="text/javascript" src="engine/lib/create.js"></script>
 	
 	<!--engine JS-->
 	<script type="text/javascript" src="engine/engine.js"></script>
@@ -406,7 +406,7 @@
 					}
 					return a;
 				},
-				update: function() {
+				update: function(dt) {
 					//set absPos
 					this.absPos.x = this.pos.x;
 					this.absPos.y = this.pos.y;
@@ -415,6 +415,11 @@
 					//add to area
 					if (this.isCollision) {
 						engine.settings.currentGame.scene.collisionCache.push(this.getArea());
+					}
+
+					//update sprite
+					if (this.sprite.hasOwnProperty('update')) {
+						this.sprite.update(dt);
 					}
 				},
 				render: function(g) {
@@ -538,19 +543,6 @@
 			var playerSprites = engine.spritesheets.player;
 			var player = new engine.Entity(300, 300, 48, 48);
 
-			//dust particles
-			var dustParticles = new engine.components.ParticleSystem(0,-8, {
-				color: 'yellow',
-				velocity: 0.5,
-				direction: 'left',
-				directionDegree: 20,
-				longevity: 1000,
-				width: 3,
-				height: 3,
-			});
-			dustParticles.options.gravity.y = -0.01;
-			player.attach('dustParticles', dustParticles);
-
 			//idle up
 			var idle_up = new engine.components.SpriteAnim(-48, -48, 200,
 				[playerSprites.get('player_idle_up.png')],
@@ -633,70 +625,9 @@
 
 			//Player update
 			player.event.bind('update_pre', function(dt) {
-				
+
 				//reset stuff
 				player.moving = false;
-				player.canMoveUp = true;
-				player.canMoveRight = true;
-				player.canMoveLeft = true;
-				player.canMoveDown = true;
-
-				//check collision
-				var i, box, area;
-				for(i in world.collisionCache) {
-					box = world.collisionCache[i];
-					
-					var within = {y:false,x:false};
-					area = player.getArea();
-					
-
-					//check Y
-					if ((area.top >= box.top && area.top <= box.bottom) || (area.bottom >= box.top && area.top <= box.top)) {
-						game.console.log('WITHIN Y', true);
-						within.y = true;
-					}
-					//check X
-					if ((area.left >= box.left && area.left <= box.right) || (area.right >= box.left && area.right <= box.right)) {
-						game.console.log('WITHIN X', true);
-						within.x = true;
-					}
-
-					if (within.x === true && within.y === true) {
-						game.console.log('COLLISION', true);
-
-						
-						var top = Math.abs(box.top - area.bottom);
-
-						var left = Math.abs(box.left - area.right);
-
-						var right = Math.abs(box.right - area.left);
-
-						var bottom = Math.abs(box.bottom - area.top);
-
-						game.console.debug('top', top);
-						game.console.debug('left', left);
-						game.console.debug('right', right);
-						game.console.debug('bottom', bottom);
-
-						if (top < left && top < right && top < bottom) {
-							//top
-							player.canMoveDown = false;
-							player.pos.y -= top;
-						}else if (left < top && left < right && left < bottom) {
-							//left
-							player.canMoveRight = false;
-							player.pos.x -= left;
-						}else if (right < left && right < top && right < bottom) {
-							//right
-							player.canMoveLeft = false;
-							player.pos.x += right;
-						}else if (bottom < left && bottom < right && bottom < top) {
-							//bottom
-							player.canMoveUp = false;
-							player.pos.y += bottom;
-						}
-					}
-				}
 
 				//update camera
 				world.camera.pos.x = player.pos.x - (game.canvas.width/2);
@@ -715,40 +646,32 @@
 				
 				var speed = (game.input.keys['shift']) ? 3 : 2;
 
-				if (game.input.keys['w'] && player.canMoveUp) {
+				if (game.input.keys['w'] && player.collideTop == false) {
 					player.moving = true;
 					player.direction = 'up';
-					player.components.dustParticles.options.direction = 'down';
 					player.pos.y -= speed * dt;
 				}
-				if (game.input.keys['a'] && player.canMoveLeft) {
+				if (game.input.keys['a'] && player.collideLeft == false) {
 					player.moving = true;
 					player.direction = 'left';
-					player.components.dustParticles.options.direction = 'right';
 					player.pos.x -= speed * dt;
 				}
-				if (game.input.keys['s'] && player.canMoveDown) {
+				if (game.input.keys['s'] && player.collideBottom == false) {
 					player.moving = true;
 					player.direction = 'down';
-					player.components.dustParticles.options.direction = 'up';
 					player.pos.y += speed * dt;
 				}
-				if (game.input.keys['d'] && player.canMoveRight) {
+				if (game.input.keys['d'] && player.collideRight == false) {
 					player.moving = true;
 					player.direction = 'right';
-					player.components.dustParticles.options.direction = 'left';
 					player.pos.x += speed * dt;
 				}
 
 				if (player.moving === true) {
 					//set walking spriteAnim
 					player.components['walk_' + player.direction].alive = true;
-
-					//set birthrate and direction for our dust particles
-					player.components.dustParticles.options.birthRate = 0.1;
 				}else {
 					player.components['idle_' + player.direction].alive = true;
-					player.components.dustParticles.options.birthRate = 0;
 				}
 
 			});
@@ -765,8 +688,6 @@
 			 * Initialize socket connection
 			 *------------------------------*/
 			//game.socket = io.connect('http://127.0.0.1:8080');
-
-
 
 			
 			game.run();

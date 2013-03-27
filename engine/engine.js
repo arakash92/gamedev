@@ -1243,26 +1243,25 @@ engine.Input = Class.extend({
 			//set mouse velocity
 			self.mouse.velocity.reset();
 
-			self.mouse.velocity.x = self.mouse.pos.x;
-			self.mouse.velocity.y = self.mouse.pos.y;
+			self.mouse.velocity.x = self.mouse.absolutePos.x;
+			self.mouse.velocity.y = self.mouse.absolutePos.y;
 
 			self.mouse.velocity.x -= x;
 			self.mouse.velocity.y -= y;
 
 			//get the difference since last move, we'll store this as the mouse speed
-			self.mouse.speed.x = Math.abs(self.mouse.pos.x - x);
-			self.mouse.speed.y = Math.abs(self.mouse.pos.y - y);
+			self.mouse.speed.x = Math.abs(self.mouse.absolutePos.x - x);
+			self.mouse.speed.y = Math.abs(self.mouse.absolutePos.y - y);
 			
-			//finally, update the new position
-			self.mouse.pos.x = x;
-			self.mouse.pos.y = y;
+			//finally, update the new absolutePosition
+			self.mouse.absolutePos.x = x;
+			self.mouse.absolutePos.y = y;
 
 			if (engine.settings.currentGame.scene !== null) {
-				//and update the absolutePos
-				self.mouse.absolutePos.x = self.mouse.pos.x;
-				self.mouse.absolutePos.y = self.mouse.pos.y;
-				self.mouse.absolutePos.add(engine.settings.currentGame.scene.camera.pos);
-				engine.settings.currentGame.console.debug('mouse absolute', self.mouse.absolutePos.toString());
+				//and update the relative pos
+				self.mouse.pos.x = self.mouse.absolutePos.x;
+				self.mouse.pos.y = self.mouse.absolutePos.y;
+				self.mouse.pos.add(engine.settings.currentGame.scene.camera.pos);
 			}
 		});
 	},

@@ -167,6 +167,10 @@ engine.registerModule('Scene', '0.1.0')
 				this.panningEnabled = false;
 				this.panning = false;
 				this.panningStart = new engine.Vector();
+
+				if (engine.settings.isEditor === true) {
+					this.panningEnabled = true;
+				}
 			},
 			zoomIn: function() {
 				this.zoomLevel += 1;
@@ -198,15 +202,15 @@ engine.registerModule('Scene', '0.1.0')
 					if (this.panning === true) {
 						//continue drag
 						//has the mouse moved?
-						if (engine.settings.currentGame.input.mouse.pos.x !== this.panningStart.x || engine.settings.currentGame.input.mouse.pos.y !== this.panningStart.y) {
-							this.pos.x = this.panningStart.x - engine.settings.currentGame.input.mouse.pos.x;
-							this.pos.y = this.panningStart.y - engine.settings.currentGame.input.mouse.pos.y;
+						if (engine.settings.currentGame.input.mouse.absolutePos.x !== this.panningStart.x || engine.settings.currentGame.input.mouse.absolutePos.y !== this.panningStart.y) {
+							this.pos.x = this.panningStart.x - engine.settings.currentGame.input.mouse.absolutePos.x;
+							this.pos.y = this.panningStart.y - engine.settings.currentGame.input.mouse.absolutePos.y;
 						}
 					}else {
 						//start this.panning
 						this.panning = true;
-						this.panningStart.x = this.pos.x + engine.settings.currentGame.input.mouse.pos.x;
-						this.panningStart.y = this.pos.y + engine.settings.currentGame.input.mouse.pos.y;
+						this.panningStart.x = this.pos.x + engine.settings.currentGame.input.mouse.absolutePos.x;
+						this.panningStart.y = this.pos.y + engine.settings.currentGame.input.mouse.absolutePos.y;
 					}
 				}else if (this.panning === true) {
 					//this.panning stopped
