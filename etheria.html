@@ -59,6 +59,13 @@
 		}
 		#game {
 			overflow: hidden;
+			cursor: default;
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			-khtml-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			user-select: none;
 		}
 		.container-fluid {
 			padding: 0;
@@ -165,6 +172,15 @@
 			text-shadow: 1px 1px 1px #FFF;
 			filter: dropshadow(color=#FFF, offx=1, offy=1);
 		}
+
+
+		/* gui hud */
+		.hud-bottom {
+			z-index: 25;
+			position: absolute;
+			width: 100%;
+			bottom: 0px;
+		}
 	</style>
 </head>
 <body>
@@ -181,6 +197,7 @@
 			</div>
 		</div>
 	</div>
+
 	<div id="game">
 		
 		<div class="gui-settings">
@@ -213,38 +230,26 @@
 			</div>
 		</div>
 
-		<div class="gui-hud" style="display: none;">
-			<div class="top">
-
-			</div>
-			<div class="bottom">
-				<div class="inner">
-					<div class="left">
-
-					</div>
-					<div class="center">
-						<div class="item health">
-							200
-						</div>
-					</div>
-					<div class="right">
-						<div class="time">
-						1:30:45
-					</div>
-				</div>
-			</div>
+	
+		<div class="hud-top">
+			top
 		</div>
+		<div class="hud-bottom">
+			bottom
+		</div>
+	
+
 		<div class="gui-menu">
 
 		</div>
 		
-	</div>
-	<div class="editor-debugger">
-		<div class="inner">
+		<div class="editor-debugger">
+			<div class="inner">
+			</div>
 		</div>
-	</div>
-	<div class="editor-log">
-		<div class="inner">
+		<div class="editor-log">
+			<div class="inner">
+			</div>
 		</div>
 	</div>
 
@@ -262,8 +267,9 @@
 		/*------------------------------
 		 * Now we set the initial volume levels
 		 *------------------------------*/
-		engine.sound.setVolume('music', 0.4);
-		engine.sound.setVolume('sfx', 0.8);
+		engine.sound.setVolume(0.3, 'music');
+		engine.sound.setVolume(0.2, 'ambient');
+		engine.sound.setVolume(0.9, 'sfx');
 		
 
 		/*------------------------------
@@ -285,7 +291,7 @@
 		$(".gui-settings .music-volume .slider").slider({
 			orientation: 'vertical',
 			step: 0.1,
-			value: 0.4,
+			value: 0.3,
 			min: 0.0,
 			max: 1.0,
 			change: function() {
@@ -351,10 +357,15 @@
 		
 		engine.preload({
 			core: {
-				modules: 'Entity,Scene,ParticleSystem,SpriteAnim',
+				modules: 'Entity,Scene,ParticleSystem,SpriteAnim,Tile',
 			},
 			project: {
 				spritesheets: 'grasslands.json,player.json',
+				sounds: {
+					'music_thejungle': 'sounds/music/thejungle.ogg',
+					'music_beforethestorm': 'sounds/music/silencebeforethestorm.ogg',
+					'ambient_grasslands': 'sounds/ambient/grasslands_ambient.ogg',
+				},
 			},
 		}, function(asset) {
 			/*------------------------------
@@ -370,65 +381,22 @@
 			 * Fade out the loading overlay
 			 *------------------------------*/
 			$(".preload-overlay").hide('fade', 1000);
+
+			/*------------------------------
+			 * Hide the main menu
+			 *------------------------------*/
 			$(".gui-mainmenu").hide('fade', 1500);
+
 
 			/*------------------------------
 			 * Initialzie the game and load the main menu
 			 *------------------------------*/
 			game = new engine('#game', {fps: 60, imageSmoothingEnabled: false});
 
+
 			/*------------------------------
-			 * Testing spritesheet
+			 * Level parsing function
 			 *------------------------------*/
-
-			//define a tile class
-			engine.Tile = Class.extend({
-				init: function(sprite, x, y, width, height) {
-					this.sprite = sprite;
-					this.visible = true;
-					this.isCollision = false;
-					this.pos = new engine.Vector(x,y);
-					this.absPos = new engine.Vector(0,0);
-					this.width = width;
-					this.height = height;
-				},
-				getArea: function() {
-					var a = {
-						left: this.pos.x,
-						right: this.pos.x + this.width,
-						top: this.pos.y,
-						bottom: this.pos.y + this.height,
-						centerX: this.pos.x + (this.width/2),
-						centerY: this.pos.y + (this.height/2),
-					};
-					for(var i in a) {
-						a[i] = Math.abs(a[i]);
-					}
-					return a;
-				},
-				update: function(dt) {
-					//set absPos
-					this.absPos.x = this.pos.x;
-					this.absPos.y = this.pos.y;
-					this.absPos.sub(engine.settings.currentGame.scene.camera.pos);
-
-					//add to area
-					if (this.isCollision) {
-						engine.settings.currentGame.scene.collisionCache.push(this.getArea());
-					}
-
-					//update sprite
-					if (this.sprite.hasOwnProperty('update')) {
-						this.sprite.update(dt);
-					}
-				},
-				render: function(g) {
-					if (this.visible) {
-						this.sprite.render(g, Math.round(this.absPos.x), Math.round(this.absPos.y), this.width, this.height);
-					}
-				},
-			});
-
 			function parseLevel(level, size, layer) {
 				var i,ii,x=0,y=0,tile;
 				for(i in level) {
@@ -470,8 +438,11 @@
 			//world.layers.two.visible = false;
 
 			//enable panning the camera
-			world.camera.panningEnabled = true;
+			//world.camera.panningEnabled = true;
 
+			/*------------------------------
+			 * Grass
+			 *------------------------------*/
 			parseLevel([
 			'000000000000000000000000000000000000000000',
 			'000000000000000000000000000000000000000000',
@@ -493,6 +464,10 @@
 			'000000000000000000000000000000000000000000',
 			], 64, world.layers.one);
 
+
+			/*------------------------------
+			 * Bushes
+			 *------------------------------*/
 			parseLevel([
 			'##########################################',
 			'#                   #                    #',
@@ -515,11 +490,13 @@
 			], 64, world.layers.two);
 
 			
-			
+			/*------------------------------
+			 * Collision
+			 *------------------------------*/
 			parseLevel([
 			'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
 			'C                   C                    C',
-			'C       CCCCCCC     C                    C',
+			'C  C    CCCCCCC     C                    C',
 			'C       C     C     C                    C',
 			'C       C     C     C                    C',
 			'C  CCCCCC     C     CCCCCC  CCCCCCCCCCC  C',
@@ -643,7 +620,6 @@
 				player.components['walk_down'].alive = false;
 				player.components['walk_left'].alive = false;
 
-				
 				var speed = (game.input.keys['shift']) ? 3 : 2;
 
 				if (game.input.keys['w'] && player.collideTop == false) {
@@ -651,15 +627,15 @@
 					player.direction = 'up';
 					player.pos.y -= speed * dt;
 				}
-				if (game.input.keys['a'] && player.collideLeft == false) {
-					player.moving = true;
-					player.direction = 'left';
-					player.pos.x -= speed * dt;
-				}
 				if (game.input.keys['s'] && player.collideBottom == false) {
 					player.moving = true;
 					player.direction = 'down';
 					player.pos.y += speed * dt;
+				}
+				if (game.input.keys['a'] && player.collideLeft == false) {
+					player.moving = true;
+					player.direction = 'left';
+					player.pos.x -= speed * dt;
 				}
 				if (game.input.keys['d'] && player.collideRight == false) {
 					player.moving = true;
@@ -677,8 +653,65 @@
 			});
 
 			//add player
-			
 			world.layers.three.entities.push(player);
+
+			/*------------------------------
+			 * Fireplace entity
+			 *------------------------------*/
+			var fireplace = new engine.Entity(48*4, 48*3);
+
+			var sprite = engine.spritesheets.grasslands.get('fireplace.png');
+			fireplace.event.bind('render_pre', function(g) {
+				sprite.render(g, fireplace.absolutePos.x, fireplace.absolutePos.y, 48, 48);
+			});
+
+			//smoke particles
+			var smoke = new engine.components.ParticleSystem(24, -24, {
+				longevity: 15000,
+				color: '#000',
+				direction: 'up',
+				directionDegree: 35,
+				birthRate: 0.1,
+				velocity: 0.2,
+				width: 3,
+				height: 3,
+			});
+			fireplace.attach('smoke', smoke);
+
+
+
+			//fire particles
+			var fire = new engine.components.ParticleSystem(24, -24, {
+				longevity: 4000,
+				color: '#FF8400',
+				direction: 'up',
+				directionDegree: 40,
+				birthRate: 0.3,
+				velocity: 0.4,
+				width: 2,
+				height: 2,
+			});
+			fireplace.attach('fire', fire);
+
+			world.layers.two.entities.push(fireplace);
+
+
+
+			/*------------------------------
+			 * Play music and ambient
+			 *------------------------------*/
+			var music = engine.sound.get('music_beforethestorm', 'music');
+			music.addEventListener('complete', function() {
+				music.play(createJS.Sound.INTERRUPT_ANY, 0, 0, -1);
+			});
+			
+			var ambient = engine.sound.get('ambient_grasslands', 'ambient');
+			ambient.addEventListener('complete', function() {
+				ambient.play(createJS.Sound.INTERRUPT_ANY, 0, 0, -1);
+			});
+
+
+
 
 			//stage
 			game.stage(world);

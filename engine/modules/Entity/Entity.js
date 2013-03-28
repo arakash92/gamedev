@@ -131,7 +131,11 @@ engine.registerModule('Entity', '0.1.0')
 			},
 			
 			render: function(g) {
+				this.event.trigger('render_pre', g);
+				
 				this.renderDebug(g);
+
+				this.event.trigger('render_post', g);
 			},
 
 			renderEditor: function(g) {

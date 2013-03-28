@@ -775,7 +775,6 @@ if (isset($_GET['c'])) {
 					var id = $(this).attr('data-id');
 					items.push(id);
 				});
-				//trigger a reload with an array of IDs.
 				editor.reorderLayers(items);
 			},
 		});
@@ -785,12 +784,16 @@ if (isset($_GET['c'])) {
 		 * Reorder layers
 		 *------------------------------*/
 		editor.reorderLayers = function(items) {
+			console.log('reorder layers');
+			console.log(items);
+			console.log('building new array...');
 			//build new array
 			var i;
 			for(i in items) {
 				items[i] = game.scene.layers[items[i]];
 			}
 			game.scene.layers = items;
+			console.log(game.scene.layers);
 			console.log('Layers reordered.');
 		}
 

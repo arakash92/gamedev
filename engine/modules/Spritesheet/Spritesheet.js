@@ -22,6 +22,8 @@ engine.registerModule('Spritesheet', '0.1.0')
 					g.globalAlpha = 1;
 					g.drawImage(this.image, this.x, this.y, this.width, this.height, x, y, width, height);
 				},
+				update: function(dt) {
+				},
 			}),
 
 			init: function(sheet, callback) {

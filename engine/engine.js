@@ -1009,6 +1009,7 @@ engine.sound.get = function(name, type) {
 	}else {
 		engine.sound.instances[type][name].push(instance);
 	}
+	instance.setVolume(engine.sound.volumeLevels[type]);
 	return instance;
 },
 
